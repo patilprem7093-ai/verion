@@ -57,3 +57,20 @@
     <button onclick="login()" class="bg-blue-600 w-full py-2 rounded">Login</button>
   </div>
 </div>
+<script>
+function openLogin() {
+  document.getElementById("loginModal").classList.remove("hidden");
+}
+
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if (email && password) {
+    alert("Login successful (demo)");
+    document.getElementById("loginModal").classList.add("hidden");
+  } else {
+    alert("Enter all fields");
+  }
+}
+</script>
