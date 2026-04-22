@@ -4,71 +4,117 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Verion</title>
- <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body class="bg-gray-900 text-white">
- <!-- Navbar -->
   <nav class="flex justify-between items-center p-4 bg-gray-800 shadow">
     <h1 class="text-xl font-bold">🚀 Verion</h1>
-    <button class="bg-blue-600 px-4 py-2 rounded">Login</button>
+    <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500">Login</button>
   </nav>
-<!-- Main -->
+
   <div class="p-6">
     <h2 class="text-2xl font-semibold mb-4">Welcome to Verion</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      
-      <div class="bg-gray-800 p-4 rounded">
+      <div class="bg-gray-800 p-4 rounded border border-gray-700">
         <h3 class="font-bold">Editor</h3>
         <p class="text-sm text-gray-400">Online coding environment</p>
       </div>
-
-      <div class="bg-gray-800 p-4 rounded">
+      <div class="bg-gray-800 p-4 rounded border border-gray-700">
         <h3 class="font-bold">Projects</h3>
         <p class="text-sm text-gray-400">Manage your work</p>
       </div>
-
-      <div class="bg-gray-800 p-4 rounded">
+      <div class="bg-gray-800 p-4 rounded border border-gray-700">
         <h3 class="font-bold">Deploy</h3>
         <p class="text-sm text-gray-400">One-click hosting</p>
       </div>
-
     </div>
   </div>
 
+  <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
+    <div class="bg-gray-800 p-6 rounded w-80 relative">
+      <button onclick="closeLogin()" class="absolute top-2 right-4 text-gray-400 hover:text-white">✕</button>
+      <h2 class="text-xl mb-4 font-semibold">Login / Sign Up</h2>
+
+      <input id="email" type="email" placeholder="Email"
+        class="w-full p-2 mb-3 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"/>
+
+      <input id="password" type="password" placeholder="Password"
+        class="w-full p-2 mb-3 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"/>
+
+      <button onclick="login()" id="loginBtn" class="bg-blue-600 hover:bg-blue-500 w-full py-2 rounded font-bold">
+        Continue
+      </button>
+      <p id="authMessage" class="text-sm text-red-400 mt-3 text-center"></p>
+    </div>
+  </div>
+
+  <script>
+    // 1. SUPABASE CONNECTION START (Yahan apni keys dalo)
+    const supabaseUrl = 'YOUR_SUPABASE_URL_HERE';
+    const supabaseKey = 'YOUR_SUPABASE_ANON_KEY_HERE';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // 2. UI FUNCTIONS
+    function openLogin() {
+      document.getElementById("loginModal").classList.remove("hidden");
+      document.getElementById("authMessage").innerText = "";
+    }
+
+    function closeLogin() {
+      document.getElementById("loginModal").classList.add("hidden");
+    }
+
+    // 3. REAL AUTHENTICATION LOGIC
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const messageEl = document.getElementById("authMessage");
+      const btn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        messageEl.innerText = "Please enter both fields.";
+        return;
+      }
+
+      btn.innerText = "Wait...";
+      messageEl.innerText = "";
+
+      // Pehle login try karte hain
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        // Agar account nahi hai, toh naya bana dete hain (Sign Up)
+        if (error.message.includes("Invalid login credentials")) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+          });
+
+          if (signUpError) {
+            messageEl.innerText = signUpError.message;
+          } else {
+            messageEl.className = "text-sm text-green-400 mt-3 text-center";
+            messageEl.innerText = "Account Created! Welcome to Verion.";
+            setTimeout(closeLogin, 2000);
+          }
+        } else {
+          messageEl.innerText = error.message;
+        }
+      } else {
+        // Login successful
+        messageEl.className = "text-sm text-green-400 mt-3 text-center";
+        messageEl.innerText = "Login Successful!";
+        setTimeout(closeLogin, 2000);
+      }
+      
+      btn.innerText = "Continue";
+    }
+  </script>
 </body>
 </html>
-<!-- Login Modal -->
-<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
-  <div class="bg-gray-800 p-6 rounded w-80">
-    <h2 class="text-xl mb-4">Login</h2>
-
-    <input id="email" type="email" placeholder="Email"
-      class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
-
-    <input id="password" type="password" placeholder="Password"
-      class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
-
-    <button onclick="login()" class="bg-blue-600 w-full py-2 rounded">Login</button>
-  </div>
-</div>
-<script>
-function openLogin() {
-  document.getElementById("loginModal").classList.remove("hidden");
-}
-
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  if (email && password) {
-    alert("Login successful (demo)");
-    document.getElementById("loginModal").classList.add("hidden");
-  } else {
-    alert("Enter all fields");
-  }
-}
-</script>
-<button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">Login</button>
