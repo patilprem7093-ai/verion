@@ -5,16 +5,19 @@
   <title>Verion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body class="bg-gray-900 text-white">
 
-<!-- NAVBAR -->
-<nav class="flex justify-between items-center p-4 bg-gray-800">
+<!-- NAV -->
+<nav class="flex justify-between p-4 bg-gray-800">
   <h1 class="text-xl font-bold">🚀 Verion</h1>
-  <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">
+  <button id="loginBtnNav" class="bg-blue-600 px-4 py-2 rounded">
     Login
   </button>
 </nav>
@@ -23,61 +26,55 @@
 <div class="p-6">
   <h2 class="text-2xl mb-4">Welcome to Verion</h2>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <button onclick="testBtn('Editor')" class="bg-gray-800 p-4 rounded">Editor</button>
-    <button onclick="testBtn('Projects')" class="bg-gray-800 p-4 rounded">Projects</button>
-    <button onclick="testBtn('Deploy')" class="bg-gray-800 p-4 rounded">Deploy</button>
+  <div class="grid grid-cols-3 gap-4">
+    <button id="editorBtn" class="bg-gray-800 p-4 rounded">Editor</button>
+    <button id="projectBtn" class="bg-gray-800 p-4 rounded">Projects</button>
+    <button id="deployBtn" class="bg-gray-800 p-4 rounded">Deploy</button>
   </div>
 </div>
 
-<!-- LOGIN MODAL -->
+<!-- MODAL -->
 <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
-  <div class="bg-gray-800 p-6 rounded w-80 relative">
+  <div class="bg-gray-800 p-6 rounded w-80">
+    <h2 class="text-center mb-3">Login</h2>
 
-    <button onclick="closeLogin()" class="absolute top-2 right-3 text-gray-400">✕</button>
+    <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
+    <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
 
-    <h2 class="text-lg mb-3 text-center">Login / Sign Up</h2>
-
-    <input id="email" type="email" placeholder="Email"
-      class="w-full p-2 mb-2 bg-gray-700 rounded">
-
-    <input id="password" type="password" placeholder="Password"
-      class="w-full p-2 mb-2 bg-gray-700 rounded">
-
-    <button onclick="handleAuth()" class="bg-blue-600 w-full py-2 rounded">
-      Continue
-    </button>
+    <button id="authBtn" class="bg-blue-600 w-full py-2 rounded">Continue</button>
+    <button id="closeBtn" class="w-full mt-2 text-sm text-gray-400">Close</button>
 
     <p id="msg" class="text-center text-sm mt-2"></p>
-
   </div>
 </div>
 
 <script>
-  // ✅ SUPABASE (YOUR KEYS)
+document.addEventListener("DOMContentLoaded", () => {
+
+  console.log("JS Loaded ✅");
+
+  // Supabase
   const supabase = window.supabase.createClient(
     'https://glxteylzcrqejaxnifiz.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
   );
 
-  // UI
-  function openLogin() {
-    document.getElementById("loginModal").classList.remove("hidden");
-  }
+  // Elements
+  const modal = document.getElementById("loginModal");
+  const msg = document.getElementById("msg");
 
-  function closeLogin() {
-    document.getElementById("loginModal").classList.add("hidden");
-  }
+  // Buttons
+  document.getElementById("loginBtnNav").onclick = () => modal.classList.remove("hidden");
+  document.getElementById("closeBtn").onclick = () => modal.classList.add("hidden");
 
-  function testBtn(name) {
-    alert(name + " working ✅");
-  }
+  document.getElementById("editorBtn").onclick = () => alert("Editor working ✅");
+  document.getElementById("projectBtn").onclick = () => alert("Projects working ✅");
+  document.getElementById("deployBtn").onclick = () => alert("Deploy working ✅");
 
-  // AUTH
-  async function handleAuth() {
+  document.getElementById("authBtn").onclick = async () => {
+
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    const msg = document.getElementById("msg");
 
     if (!email || !password) {
       msg.innerText = "Enter email & password";
@@ -86,32 +83,22 @@
 
     msg.innerText = "Please wait...";
 
-    // Try login
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (!error) {
-      msg.innerText = "Login successful ✅";
-      setTimeout(closeLogin, 1500);
+      msg.innerText = "Login success ✅";
+      setTimeout(() => modal.classList.add("hidden"), 1500);
       return;
     }
 
-    // If not exists → signup
-    if (error.message.includes("Invalid login credentials")) {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password
-      });
+    const { error: signUpError } = await supabase.auth.signUp({ email, password });
 
-      msg.innerText = signUpError
-        ? signUpError.message
-        : "Account created 🎉";
-    } else {
-      msg.innerText = error.message;
-    }
-  }
+    msg.innerText = signUpError
+      ? signUpError.message
+      : "Account created 🎉";
+  };
+
+});
 </script>
 
 </body>
