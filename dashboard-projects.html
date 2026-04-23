@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verion Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-900 text-white">
+
+<!-- NAV -->
+<nav class="flex justify-between items-center p-4 bg-gray-800">
+  <h1 class="text-xl font-bold">🚀 Verion Projects</h1>
+  <div id="userArea"></div>
+</nav>
+
+<!-- MAIN -->
+<div class="p-6">
+
+  <h2 class="text-2xl mb-4">Your Projects</h2>
+
+  <!-- CREATE -->
+  <div class="mb-4">
+    <input id="projectName" placeholder="Project name"
+      class="p-2 bg-gray-700 rounded mr-2">
+
+    <button onclick="createProject()"
+      class="bg-green-600 px-4 py-2 rounded">
+      Create
+    </button>
+  </div>
+
+  <!-- MESSAGE -->
+  <p id="statusMsg" class="text-sm mb-2 text-gray-400"></p>
+
+  <!-- LIST -->
+  <div id="projectList" class="space-y-2"></div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+  );
+
+  const userArea = document.getElementById("userArea");
+  const list = document.getElementById("projectList");
+  const msg = document.getElementById("statusMsg");
+
+  // 🔐 AUTH CHECK
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error(error);
+  }
+
+  if (!data.user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const user = data.user;
+
+  // 👤 USER UI
+  userArea.innerHTML = `
+    <span class="mr-3 text-sm">${user.email}</span>
+    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+  `;
+
+  // 🔓 LOGOUT
+  window.logout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "index.html";
+  };
+
+  // 📦 LOAD PROJECTS
+  async function loadProjects() {
+    msg.innerText = "Loading projects...";
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      msg.innerText = "Error loading projects";
+      console.error(error);
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!data.length) {
+      msg.innerText = "No projects yet.";
+      return;
+    }
+
+    msg.innerText = "";
+
+    data.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "bg-gray-800 p-3 rounded flex justify-between items-center";
+
+      div.innerHTML = `
+        <span>${p.name}</span>
+        <button onclick="deleteProject('${p.id}')" class="text-red-400">Delete</button>
+      `;
+
+      list.appendChild(div);
+    });
+  }
+
+  // ➕ CREATE PROJECT
+  window.createProject = async () => {
+    const name = document.getElementById("projectName").value;
+
+    if (!name) {
+      msg.innerText = "Enter project name";
+      return;
+    }
+
+    msg.innerText = "Creating...";
+
+    const { error } = await supabase.from("projects").insert([
+      {
+        name: name,
+        user_id: user.id
+      }
+    ]);
+
+    if (error) {
+      msg.innerText = "Error creating project";
+      console.error(error);
+      return;
+    }
+
+    document.getElementById("projectName").value = "";
+    msg.innerText = "Project created ✅";
+
+    loadProjects();
+  };
+
+  // ❌ DELETE PROJECT
+  window.deleteProject = async (id) => {
+    msg.innerText = "Deleting...";
+
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      msg.innerText = "Error deleting";
+      console.error(error);
+      return;
+    }
+
+    msg.innerText = "Deleted ✅";
+
+    loadProjects();
+  };
+
+  // 🚀 INITIAL LOAD
+  loadProjects();
+
+});
+</script>
+
+</body>
+</html>
