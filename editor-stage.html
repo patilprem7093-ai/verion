@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verion Editor Stage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Monaco Editor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    #editor {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-950 text-white h-screen overflow-hidden">
+
+<!-- TOP BAR -->
+<div class="flex justify-between items-center p-3 bg-gray-900 border-b border-gray-800">
+  <h1 class="font-bold">🚀 Verion Editor Stage</h1>
+  <button onclick="runCode()" class="bg-green-600 px-4 py-1 rounded">Run</button>
+</div>
+
+<!-- MAIN GRID -->
+<div class="grid grid-cols-2 h-full">
+
+  <!-- EDITOR -->
+  <div id="editor" class="border-r border-gray-800"></div>
+
+  <!-- OUTPUT -->
+  <div class="p-4 bg-gray-900 overflow-auto">
+    <h2 class="text-lg mb-2">Output</h2>
+    <pre id="output" class="text-green-400 text-sm"></pre>
+  </div>
+
+</div>
+
+<script>
+let editor;
+
+// 🔥 Monaco Loader
+require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" }});
+
+require(["vs/editor/editor.main"], function () {
+
+  editor = monaco.editor.create(document.getElementById("editor"), {
+    value: `// Welcome to Verion Editor
+console.log("Hello World 🚀");`,
+    language: "javascript",
+    theme: "vs-dark",
+    automaticLayout: true
+  });
+
+});
+
+// 🟢 RUN CODE
+function runCode() {
+  const code = editor.getValue();
+
+  const outputBox = document.getElementById("output");
+
+  try {
+    let logs = [];
+
+    const customConsole = {
+      log: (...args) => logs.push(args.join(" "))
+    };
+
+    const func = new Function("console", code);
+    func(customConsole);
+
+    outputBox.innerText = logs.join("\n") || "No output";
+  } catch (err) {
+    outputBox.innerText = "Error: " + err.message;
+  }
+}
+</script>
+
+</body>
+</html>
