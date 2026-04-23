@@ -14,114 +14,93 @@
   <!-- Navbar -->
   <nav class="flex justify-between items-center p-4 bg-gray-800 shadow">
     <h1 class="text-xl font-bold">🚀 Verion</h1>
-    <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500">Login</button>
+    <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">Login</button>
   </nav>
 
   <!-- Main -->
   <div class="p-6">
-    <h2 class="text-2xl font-semibold mb-4">Welcome to Verion</h2>
+    <h2 class="text-2xl mb-4">Welcome to Verion</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        <h3 class="font-bold">Editor</h3>
-        <p class="text-sm text-gray-400">Online coding environment</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        <h3 class="font-bold">Projects</h3>
-        <p class="text-sm text-gray-400">Manage your work</p>
-      </div>
-      <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        <h3 class="font-bold">Deploy</h3>
-        <p class="text-sm text-gray-400">One-click hosting</p>
-      </div>
+      <div class="bg-gray-800 p-4 rounded">Editor</div>
+      <div class="bg-gray-800 p-4 rounded">Projects</div>
+      <div class="bg-gray-800 p-4 rounded">Deploy</div>
     </div>
   </div>
 
   <!-- Login Modal -->
   <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
-    <div class="bg-gray-800 p-6 rounded w-80 relative">
-      <button onclick="closeLogin()" class="absolute top-2 right-4 text-gray-400 hover:text-white">✕</button>
-
-      <h2 class="text-xl mb-4 font-semibold text-center">Login / Sign Up</h2>
+    <div class="bg-gray-800 p-6 rounded w-80">
+      <h2 class="text-xl mb-4 text-center">Login / Sign Up</h2>
 
       <input id="email" type="email" placeholder="Email"
-        class="w-full p-2 mb-3 rounded bg-gray-700 text-white border border-gray-600"/>
+        class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
 
       <input id="password" type="password" placeholder="Password"
-        class="w-full p-2 mb-3 rounded bg-gray-700 text-white border border-gray-600"/>
+        class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
 
-      <button onclick="login()" id="loginBtn"
-        class="bg-blue-600 hover:bg-blue-500 w-full py-2 rounded font-bold">
+      <button onclick="login()" class="bg-blue-600 w-full py-2 rounded mb-2">
         Login
       </button>
 
-      <button onclick="signup()"
-        class="mt-2 w-full bg-green-600 hover:bg-green-500 py-2 rounded font-bold">
+      <button onclick="signup()" class="bg-green-600 w-full py-2 rounded">
         Create Account
       </button>
 
-      <p id="authMessage" class="text-sm text-red-400 mt-3 text-center"></p>
+      <p id="authMessage" class="text-sm mt-3 text-center"></p>
     </div>
   </div>
 
   <script>
-    // 🔑 SUPABASE CONFIG (Tumhari keys same)
+    // ✅ FIXED SUPABASE CONNECTION
     const supabaseUrl = 'https://glxteylzcrqejaxnifiz.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE';
 
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const { createClient } = supabase;
+    const client = createClient(supabaseUrl, supabaseKey);
 
-    // UI Functions
+    // UI
     function openLogin() {
       document.getElementById("loginModal").classList.remove("hidden");
-      document.getElementById("authMessage").innerText = "";
     }
 
-    function closeLogin() {
-      document.getElementById("loginModal").classList.add("hidden");
-    }
-
-    // 🔐 LOGIN
+    // LOGIN
     async function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const messageEl = document.getElementById("authMessage");
+      const msg = document.getElementById("authMessage");
 
-      if (!email || !password) {
-        messageEl.innerText = "Enter email & password";
-        return;
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await client.auth.signInWithPassword({
         email,
-        password,
+        password
       });
 
       if (error) {
-        messageEl.innerText = "Invalid email or password";
+        msg.innerText = "Invalid email or password";
+        msg.className = "text-red-400 text-sm mt-3 text-center";
       } else {
-        messageEl.className = "text-sm text-green-400 mt-3 text-center";
-        messageEl.innerText = "Login Successful!";
-        setTimeout(closeLogin, 1500);
+        msg.innerText = "Login success ✅";
+        msg.className = "text-green-400 text-sm mt-3 text-center";
       }
     }
 
-    // 🆕 SIGNUP
+    // SIGNUP
     async function signup() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const messageEl = document.getElementById("authMessage");
+      const msg = document.getElementById("authMessage");
 
-      const { error } = await supabase.auth.signUp({
+      const { error } = await client.auth.signUp({
         email,
-        password,
+        password
       });
 
       if (error) {
-        messageEl.innerText = error.message;
+        msg.innerText = error.message;
+        msg.className = "text-red-400 text-sm mt-3 text-center";
       } else {
-        messageEl.className = "text-sm text-green-400 mt-3 text-center";
-        messageEl.innerText = "Account Created Successfully!";
+        msg.innerText = "Account created 🎉";
+        msg.className = "text-green-400 text-sm mt-3 text-center";
       }
     }
   </script>
