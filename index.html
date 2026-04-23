@@ -24,52 +24,43 @@
   <h2 class="text-2xl mb-4">Welcome to Verion</h2>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-    <button onclick="testBtn('Editor')" class="bg-gray-800 p-4 rounded">
-      Editor
-    </button>
-
-    <button onclick="testBtn('Projects')" class="bg-gray-800 p-4 rounded">
-      Projects
-    </button>
-
-    <button onclick="testBtn('Deploy')" class="bg-gray-800 p-4 rounded">
-      Deploy
-    </button>
-
+    <button onclick="testBtn('Editor')" class="bg-gray-800 p-4 rounded">Editor</button>
+    <button onclick="testBtn('Projects')" class="bg-gray-800 p-4 rounded">Projects</button>
+    <button onclick="testBtn('Deploy')" class="bg-gray-800 p-4 rounded">Deploy</button>
   </div>
 </div>
 
 <!-- LOGIN MODAL -->
 <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
+  <div class="bg-gray-800 p-6 rounded w-80 relative">
 
-  <div class="bg-gray-800 p-6 rounded w-80">
+    <button onclick="closeLogin()" class="absolute top-2 right-3 text-gray-400">✕</button>
 
     <h2 class="text-lg mb-3 text-center">Login / Sign Up</h2>
 
-    <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
-    <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
+    <input id="email" type="email" placeholder="Email"
+      class="w-full p-2 mb-2 bg-gray-700 rounded">
+
+    <input id="password" type="password" placeholder="Password"
+      class="w-full p-2 mb-2 bg-gray-700 rounded">
 
     <button onclick="handleAuth()" class="bg-blue-600 w-full py-2 rounded">
       Continue
     </button>
 
-    <button onclick="closeLogin()" class="mt-2 text-sm text-gray-400 w-full">
-      Close
-    </button>
+    <p id="msg" class="text-center text-sm mt-2"></p>
 
   </div>
-
 </div>
 
 <script>
-  // ✅ SUPABASE CONNECT
+  // ✅ SUPABASE (YOUR KEYS)
   const supabase = window.supabase.createClient(
     'https://glxteylzcrqejaxnifiz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI": "anon","iat":1776870299,"exp":2092446299}'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
   );
 
-  // ✅ UI FUNCTIONS
+  // UI
   function openLogin() {
     document.getElementById("loginModal").classList.remove("hidden");
   }
@@ -78,41 +69,48 @@
     document.getElementById("loginModal").classList.add("hidden");
   }
 
-  // ✅ AUTH SYSTEM
+  function testBtn(name) {
+    alert(name + " working ✅");
+  }
+
+  // AUTH
   async function handleAuth() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
+    const msg = document.getElementById("msg");
 
     if (!email || !password) {
-      alert("Enter email & password");
+      msg.innerText = "Enter email & password";
       return;
     }
 
+    msg.innerText = "Please wait...";
+
+    // Try login
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    if (error) {
+    if (!error) {
+      msg.innerText = "Login successful ✅";
+      setTimeout(closeLogin, 1500);
+      return;
+    }
+
+    // If not exists → signup
+    if (error.message.includes("Invalid login credentials")) {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password
       });
 
-      if (signUpError) {
-        alert(signUpError.message);
-      } else {
-        alert("Account created 🎉");
-      }
+      msg.innerText = signUpError
+        ? signUpError.message
+        : "Account created 🎉";
     } else {
-      alert("Login successful ✅");
-      closeLogin();
+      msg.innerText = error.message;
     }
-  }
-
-  // ✅ BUTTON TEST
-  function testBtn(name) {
-    alert(name + " working ✅");
   }
 </script>
 
