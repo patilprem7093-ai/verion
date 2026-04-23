@@ -38,22 +38,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const userArea = document.getElementById("userArea");
 
-  const { data, error } = await supabase.auth.getUser();
+  // 🟡 Loading state
+  userArea.innerHTML = `<span class="text-sm text-gray-400">Loading...</span>`;
 
-  if (error) {
-    console.error(error);
-  }
+  // 🔐 Auth listener (BEST PRACTICE)
+  supabase.auth.onAuthStateChange((event, session) => {
 
-  if (!data.user) {
-    window.location.href = "index.html";
-    return;
-  }
+    if (!session) {
+      window.location.href = "index.html";
+      return;
+    }
 
-  userArea.innerHTML = `
-    <span class="mr-3 text-sm">${data.user.email}</span>
-    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
-  `;
+    const user = session.user;
 
+    userArea.innerHTML = `
+      <span class="mr-3 text-sm">${user.email}</span>
+      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+    `;
+  });
+
+  // 🔓 Logout
   window.logout = async () => {
     await supabase.auth.signOut();
     window.location.href = "index.html";
