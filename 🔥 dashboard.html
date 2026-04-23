@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Verion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-900 text-white">
+
+<!-- NAV -->
+<nav class="flex justify-between items-center p-4 bg-gray-800">
+  <h1 class="text-xl font-bold">🚀 Verion Dashboard</h1>
+  <div id="userArea"></div>
+</nav>
+
+<!-- MAIN -->
+<div class="p-6">
+  <h2 class="text-2xl mb-4">Welcome</h2>
+
+  <div class="grid grid-cols-3 gap-4">
+    <div class="bg-gray-800 p-4 rounded">Editor</div>
+    <div class="bg-gray-800 p-4 rounded">Projects</div>
+    <div class="bg-gray-800 p-4 rounded">Deploy</div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'YOUR_ANON_KEY_HERE'
+  );
+
+  const userArea = document.getElementById("userArea");
+
+  // 🔐 Check user
+  const { data } = await supabase.auth.getUser();
+
+  if (!data.user) {
+    // ❌ Not logged in → redirect back
+    window.location.href = "/";
+    return;
+  }
+
+  // ✅ Logged in
+  userArea.innerHTML = `
+    <span class="mr-3 text-sm">${data.user.email}</span>
+    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+  `;
+
+  // 🔓 Logout
+  window.logout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+});
+</script>
+
+</body>
+</html>
