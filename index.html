@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body class="bg-gray-900 text-white">
@@ -44,12 +45,12 @@
 
   <div class="bg-gray-800 p-6 rounded w-80">
 
-    <h2 class="text-lg mb-3 text-center">Login</h2>
+    <h2 class="text-lg mb-3 text-center">Login / Sign Up</h2>
 
     <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
     <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
 
-    <button onclick="fakeLogin()" class="bg-blue-600 w-full py-2 rounded">
+    <button onclick="handleAuth()" class="bg-blue-600 w-full py-2 rounded">
       Continue
     </button>
 
@@ -62,6 +63,13 @@
 </div>
 
 <script>
+  // ✅ SUPABASE CONNECT
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI": "anon","iat":1776870299,"exp":2092446299}'
+  );
+
+  // ✅ UI FUNCTIONS
   function openLogin() {
     document.getElementById("loginModal").classList.remove("hidden");
   }
@@ -70,10 +78,39 @@
     document.getElementById("loginModal").classList.add("hidden");
   }
 
-  function fakeLogin() {
-    alert("Login button working ✅");
+  // ✅ AUTH SYSTEM
+  async function handleAuth() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      alert("Enter email & password");
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (signUpError) {
+        alert(signUpError.message);
+      } else {
+        alert("Account created 🎉");
+      }
+    } else {
+      alert("Login successful ✅");
+      closeLogin();
+    }
   }
 
+  // ✅ BUTTON TEST
   function testBtn(name) {
     alert(name + " working ✅");
   }
