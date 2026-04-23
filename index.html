@@ -14,7 +14,7 @@
 <!-- NAV -->
 <nav class="flex justify-between p-4 bg-gray-800">
   <h1 class="text-xl font-bold">🚀 Verion</h1>
-  <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">
+  <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500">
     Login
   </button>
 </nav>
@@ -31,43 +31,37 @@
 </div>
 
 <!-- LOGIN MODAL -->
-<!-- LOGIN BUTTON (Navbar me hona chahiye) -->
-<button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500">
-  Login
-</button>
+<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
+  <div class="bg-gray-800 p-6 rounded w-80 relative">
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-  <div class="bg-gray-800 p-6 rounded-lg w-80 shadow-lg relative">
+    <button onclick="closeLogin()" class="absolute top-2 right-3">✕</button>
 
-    <!-- Close Button -->
-    <button onclick="closeLogin()" class="absolute top-2 right-3 text-gray-400 hover:text-white text-lg">✕</button>
-
-    <h2 class="text-xl font-bold mb-4 text-center">Login / Sign Up</h2>
+    <h2 class="text-xl mb-4 text-center">Login / Sign Up</h2>
 
     <input id="email" type="email" placeholder="Email"
-      class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"/>
+      class="w-full p-2 mb-3 bg-gray-700 rounded"/>
 
     <input id="password" type="password" placeholder="Password"
-      class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"/>
+      class="w-full p-2 mb-3 bg-gray-700 rounded"/>
 
     <button onclick="handleAuth()" id="loginBtn"
-      class="w-full bg-blue-600 py-2 rounded font-semibold hover:bg-blue-500">
+      class="bg-blue-600 w-full py-2 rounded">
       Continue
     </button>
 
-    <p id="authMessage" class="text-sm text-center mt-3 text-red-400"></p>
+    <p id="msg" class="text-center text-sm mt-2"></p>
 
   </div>
 </div>
 
 <script>
-  // ✅ Supabase Setup (tumhari keys yahi rehni chahiye)
-  const supabaseUrl = 'https://glxteylzcrqejaxnifiz.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  // ✅ SUPABASE
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+  );
 
-  // ✅ Modal Functions
+  // ✅ OPEN / CLOSE
   function openLogin() {
     document.getElementById("loginModal").classList.remove("hidden");
   }
@@ -76,79 +70,37 @@
     document.getElementById("loginModal").classList.add("hidden");
   }
 
-  // ✅ AUTH FUNCTION (LOGIN + SIGNUP AUTO)
+  // ✅ AUTH (LOGIN + SIGNUP AUTO)
   async function handleAuth() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    const msg = document.getElementById("authMessage");
-    const btn = document.getElementById("loginBtn");
+    const msg = document.getElementById("msg");
 
     if (!email || !password) {
       msg.innerText = "Enter email & password";
       return;
     }
 
-    btn.innerText = "Please wait...";
-    msg.innerText = "";
+    msg.innerText = "Please wait...";
 
-    // 🔹 Try Login
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
     if (error) {
-      // 🔹 If not exists → Signup
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password
       });
 
-      if (signUpError) {
-        msg.innerText = signUpError.message;
-      } else {
-        msg.className = "text-green-400 text-sm text-center mt-3";
-        msg.innerText = "Account created! Check email.";
-      }
+      msg.innerText = signUpError
+        ? signUpError.message
+        : "Account created! Check email.";
     } else {
-      msg.className = "text-green-400 text-sm text-center mt-3";
       msg.innerText = "Login successful!";
       setTimeout(closeLogin, 1500);
     }
-
-    btn.innerText = "Continue";
-  }
-</script>
-
-<script>
-  // ✅ SUPABASE FIXED
-  const supabase = window.supabase.createClient(
-    'https://glxteylzcrqejaxnifiz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
-  );
-
-  function openLogin() {
-    document.getElementById("loginModal").classList.remove("hidden");
-  }
-
-  async function signup() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    document.getElementById("msg").innerText =
-      error ? error.message : "Account Created 🎉";
-  }
-
-  async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    document.getElementById("msg").innerText =
-      error ? error.message : "Login Success ✅";
   }
 </script>
 
