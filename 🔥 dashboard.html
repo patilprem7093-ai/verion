@@ -39,7 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const userArea = document.getElementById("userArea");
 
   // 🔐 Check user
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+
+if (error) {
+  console.error(error);
+}
 
   if (!data.user) {
     // ❌ Not logged in → redirect back
