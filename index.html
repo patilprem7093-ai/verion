@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Verion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,101 +11,76 @@
 
 <body class="bg-gray-900 text-white">
 
-  <!-- Navbar -->
-  <nav class="flex justify-between items-center p-4 bg-gray-800 shadow">
-    <h1 class="text-xl font-bold">🚀 Verion</h1>
-    <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">Login</button>
-  </nav>
+<!-- NAV -->
+<nav class="flex justify-between p-4 bg-gray-800">
+  <h1 class="text-xl font-bold">🚀 Verion</h1>
+  <button onclick="openLogin()" class="bg-blue-600 px-4 py-2 rounded">
+    Login
+  </button>
+</nav>
 
-  <!-- Main -->
-  <div class="p-6">
-    <h2 class="text-2xl mb-4">Welcome to Verion</h2>
+<!-- CONTENT -->
+<div class="p-6">
+  <h2 class="text-2xl mb-4">Welcome to Verion</h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-gray-800 p-4 rounded">Editor</div>
-      <div class="bg-gray-800 p-4 rounded">Projects</div>
-      <div class="bg-gray-800 p-4 rounded">Deploy</div>
-    </div>
+  <div class="space-y-4">
+    <div class="bg-gray-800 p-4 rounded">Editor</div>
+    <div class="bg-gray-800 p-4 rounded">Projects</div>
+    <div class="bg-gray-800 p-4 rounded">Deploy</div>
   </div>
+</div>
 
-  <!-- Login Modal -->
-  <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
-    <div class="bg-gray-800 p-6 rounded w-80">
-      <h2 class="text-xl mb-4 text-center">Login / Sign Up</h2>
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+  <div class="bg-gray-800 p-6 rounded w-80">
+    <h2 class="text-lg mb-3">Login / Signup</h2>
 
-      <input id="email" type="email" placeholder="Email"
-        class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
+    <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
+    <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
 
-      <input id="password" type="password" placeholder="Password"
-        class="w-full p-2 mb-3 rounded bg-gray-700 text-white"/>
+    <button onclick="signup()" class="bg-green-600 w-full py-2 rounded mb-2">
+      Create Account
+    </button>
 
-      <button onclick="login()" class="bg-blue-600 w-full py-2 rounded mb-2">
-        Login
-      </button>
+    <button onclick="login()" class="bg-blue-600 w-full py-2 rounded">
+      Login
+    </button>
 
-      <button onclick="signup()" class="bg-green-600 w-full py-2 rounded">
-        Create Account
-      </button>
-
-      <p id="authMessage" class="text-sm mt-3 text-center"></p>
-    </div>
+    <p id="msg" class="text-center text-sm mt-2"></p>
   </div>
+</div>
 
-  <script>
-    // ✅ FIXED SUPABASE CONNECTION
-    const supabaseUrl = 'https://glxteylzcrqejaxnifiz.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE';
+<script>
+  // ✅ SUPABASE FIXED
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+  );
 
-    const supabase = window.supabase.createClient(
-  'https://glxteylzcrqejaxnifiz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-);
+  function openLogin() {
+    document.getElementById("loginModal").classList.remove("hidden");
+  }
 
-    // UI
-    function openLogin() {
-      document.getElementById("loginModal").classList.remove("hidden");
-    }
+  async function signup() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-    // LOGIN
-    async function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const msg = document.getElementById("authMessage");
+    const { error } = await supabase.auth.signUp({ email, password });
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    document.getElementById("msg").innerText =
+      error ? error.message : "Account Created 🎉";
+  }
 
-      if (error) {
-        msg.innerText = "Invalid email or password";
-        msg.className = "text-red-400 text-sm mt-3 text-center";
-      } else {
-        msg.innerText = "Login success ✅";
-        msg.className = "text-green-400 text-sm mt-3 text-center";
-      }
-    }
+  async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-    // SIGNUP
-    async function signup() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const msg = document.getElementById("authMessage");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-      const { error } = await client.auth.signUp({
-        email,
-        password
-      });
-
-      if (error) {
-        msg.innerText = error.message;
-        msg.className = "text-red-400 text-sm mt-3 text-center";
-      } else {
-        msg.innerText = "Account created 🎉";
-        msg.className = "text-green-400 text-sm mt-3 text-center";
-      }
-    }
-  </script>
+    document.getElementById("msg").innerText =
+      error ? error.message : "Login Success ✅";
+  }
+</script>
 
 </body>
 </html>
