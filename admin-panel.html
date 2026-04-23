@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verion Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-950 text-white">
+
+<!-- NAV -->
+<nav class="flex justify-between items-center p-4 bg-gray-900 border-b border-gray-800">
+  <h1 class="text-xl font-bold">🚀 Verion Admin Panel</h1>
+  <div id="userBox"></div>
+</nav>
+
+<!-- MAIN GRID -->
+<div class="grid grid-cols-3 gap-4 p-6">
+
+  <!-- LEFT: CONTROL PANEL -->
+  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-3">Control Panel</h2>
+
+    <input id="dataInput" placeholder="Enter data..."
+      class="w-full p-2 mb-2 bg-gray-800 rounded">
+
+    <button onclick="saveData()"
+      class="w-full bg-green-600 py-2 rounded mb-2">
+      Save Data
+    </button>
+
+    <button onclick="loadData()"
+      class="w-full bg-blue-600 py-2 rounded">
+      Load Data
+    </button>
+  </div>
+
+  <!-- CENTER: OUTPUT / EXECUTION -->
+  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-3">Execution Output</h2>
+    <div id="outputBox" class="text-sm text-gray-300 space-y-2"></div>
+  </div>
+
+  <!-- RIGHT: DATABASE VIEW -->
+  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+    <h2 class="text-lg font-semibold mb-3">Database Records</h2>
+    <div id="dbBox" class="space-y-2 text-sm"></div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const supabase = window.supabase.createClient(
+    'https://glxteylzcrqejaxnifiz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+  );
+
+  const userBox = document.getElementById("userBox");
+  const outputBox = document.getElementById("outputBox");
+  const dbBox = document.getElementById("dbBox");
+
+  // 🔐 CHECK USER
+  const { data } = await supabase.auth.getUser();
+
+  if (!data.user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const user = data.user;
+
+  userBox.innerHTML = `
+    <span class="text-sm mr-2">${user.email}</span>
+    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+  `;
+
+  window.logout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "index.html";
+  };
+
+  // 🟢 SAVE DATA (PERSISTENCE)
+  window.saveData = async () => {
+    const value = document.getElementById("dataInput").value;
+
+    if (!value) {
+      outputBox.innerHTML = `<p class="text-red-400">Enter data first</p>`;
+      return;
+    }
+
+    const { error } = await supabase.from("projects").insert([
+      {
+        name: value,
+        user_id: user.id
+      }
+    ]);
+
+    if (error) {
+      outputBox.innerHTML = `<p class="text-red-400">Save failed</p>`;
+      return;
+    }
+
+    outputBox.innerHTML = `<p class="text-green-400">Data saved successfully ✅</p>`;
+    loadData();
+  };
+
+  // 🔵 LOAD DATA (READ)
+  window.loadData = async () => {
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      outputBox.innerHTML = `<p class="text-red-400">Load failed</p>`;
+      return;
+    }
+
+    dbBox.innerHTML = "";
+
+    if (!data.length) {
+      dbBox.innerHTML = `<p class="text-gray-500">No data found</p>`;
+      return;
+    }
+
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "bg-gray-800 p-2 rounded";
+      div.innerText = item.name;
+      dbBox.appendChild(div);
+    });
+
+    outputBox.innerHTML = `<p class="text-blue-400">Data loaded ✔</p>`;
+  };
+
+  // auto load
+  loadData();
+
+});
+</script>
+
+</body>
+</html>
