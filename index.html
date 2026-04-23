@@ -72,7 +72,7 @@
       const password = document.getElementById("password").value;
       const msg = document.getElementById("authMessage");
 
-      const { error } = await client.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
