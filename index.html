@@ -5,10 +5,7 @@
   <title>Verion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -36,12 +33,21 @@
 <!-- MODAL -->
 <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
   <div class="bg-gray-800 p-6 rounded w-80">
-    <h2 class="text-center mb-3">Login</h2>
+    <h2 class="text-center mb-3">Login / Signup</h2>
 
     <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
     <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
 
-    <button id="authBtn" class="bg-blue-600 w-full py-2 rounded">Continue</button>
+    <!-- LOGIN -->
+    <button id="loginBtn" class="bg-blue-600 w-full py-2 rounded mb-2">
+      Login
+    </button>
+
+    <!-- SIGNUP -->
+    <button id="signupBtn" class="bg-green-600 w-full py-2 rounded">
+      Create Account
+    </button>
+
     <button id="closeBtn" class="w-full mt-2 text-sm text-gray-400">Close</button>
 
     <p id="msg" class="text-center text-sm mt-2"></p>
@@ -63,15 +69,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("loginModal");
   const msg = document.getElementById("msg");
 
-  // Buttons
+  // OPEN / CLOSE
   document.getElementById("loginBtnNav").onclick = () => modal.classList.remove("hidden");
   document.getElementById("closeBtn").onclick = () => modal.classList.add("hidden");
 
+  // FEATURE BUTTONS
   document.getElementById("editorBtn").onclick = () => alert("Editor working ✅");
   document.getElementById("projectBtn").onclick = () => alert("Projects working ✅");
   document.getElementById("deployBtn").onclick = () => alert("Deploy working ✅");
 
-  document.getElementById("authBtn").onclick = async () => {
+  // 🔐 LOGIN ONLY
+  document.getElementById("loginBtn").onclick = async () => {
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -81,21 +89,43 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    msg.innerText = "Please wait...";
+    msg.innerText = "Logging in...";
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    if (!error) {
-      msg.innerText = "Login success ✅";
-      setTimeout(() => modal.classList.add("hidden"), 1500);
+    if (error) {
+      msg.innerText = "Invalid login ❌";
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    msg.innerText = "Login success ✅";
+    setTimeout(() => modal.classList.add("hidden"), 1200);
+  };
 
-    msg.innerText = signUpError
-      ? signUpError.message
-      : "Account created 🎉";
+  // 🆕 SIGNUP ONLY
+  document.getElementById("signupBtn").onclick = async () => {
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      msg.innerText = "Enter email & password";
+      return;
+    }
+
+    msg.innerText = "Creating account...";
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    msg.innerText = error
+      ? error.message
+      : "Check email for confirmation 📩";
   };
 
 });
