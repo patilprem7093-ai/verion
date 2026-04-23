@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verion SaaS MVP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+</head>
+
+<body class="bg-gray-900 text-white">
+
+<!-- NAV -->
+<nav class="flex justify-between p-4 bg-gray-800">
+  <h1 class="font-bold">🚀 Verion MVP</h1>
+  <div id="userArea"></div>
+</nav>
+
+<!-- MAIN -->
+<div class="grid grid-cols-3 gap-4 p-4">
+
+  <!-- PROJECT PANEL -->
+  <div class="col-span-1 bg-gray-800 p-3 rounded">
+    <h2 class="mb-2 font-bold">Projects</h2>
+
+    <input id="projectName"
+           class="w-full p-2 bg-gray-700 rounded mb-2"
+           placeholder="New project" />
+
+    <button id="createBtn"
+            class="bg-green-600 w-full py-2 rounded mb-2">
+      Create
+    </button>
+
+    <p id="msg" class="text-xs text-gray-400 mb-2"></p>
+
+    <div id="projectList" class="space-y-2"></div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="col-span-2 bg-gray-800 p-3 rounded">
+    <h2 class="mb-2 font-bold">Editor</h2>
+    <div id="editor" style="height:500px;"></div>
+  </div>
+
+</div>
+
+<script>
+/* =========================
+   CONFIG
+========================= */
+
+const SUPABASE_URL = "https://glxteylzcrqejaxnifiz.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY"; // ⚠️ replace this
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+/* =========================
+   STATE
+========================= */
+
+let currentUser = null;
+let editor = null;
+let editorReady = false;
+
+/* =========================
+   INIT
+========================= */
+
+document.addEventListener("DOMContentLoaded", init);
+
+async function init() {
+  await checkAuth();
+  initUI();
+  initMonaco();
+}
+
+/* =========================
+   AUTH
+========================= */
+
+async function checkAuth() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) console.error(error);
+
+  if (!data.user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  currentUser = data.user;
+
+  document.getElementById("userArea").innerHTML = `
+    <span class="text-sm mr-2">${currentUser.email}</span>
+    <button id="logoutBtn" class="bg-red-600 px-2 py-1 rounded">Logout</button>
+  `;
+
+  document.getElementById("logoutBtn").onclick = logout;
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  window.location.href = "index.html";
+}
+
+/* =========================
+   UI EVENTS
+========================= */
+
+function initUI() {
+  document.getElementById("createBtn").onclick = createProject;
+  loadProjects();
+}
+
+/* =========================
+   PROJECTS
+========================= */
+
+async function loadProjects() {
+  const list = document.getElementById("projectList");
+  const msg = document.getElementById("msg");
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    msg.innerText = "Error loading projects";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    list.innerHTML = `<p class="text-gray-400 text-sm">No projects yet</p>`;
+    return;
+  }
+
+  data.forEach(project => {
+    const div = document.createElement("div");
+    div.className = "bg-gray-700 p-2 rounded cursor-pointer";
+    div.innerText = project.name;
+
+    div.onclick = () => loadFile(project.name);
+
+    list.appendChild(div);
+  });
+}
+
+async function createProject() {
+  const input = document.getElementById("projectName");
+  const msg = document.getElementById("msg");
+  const name = input.value.trim();
+
+  if (!name) {
+    msg.innerText = "Enter project name";
+    return;
+  }
+
+  msg.innerText = "Creating...";
+
+  const { error } = await supabase.from("projects").insert([
+    {
+      name,
+      user_id: currentUser.id
+    }
+  ]);
+
+  if (error) {
+    msg.innerText = "Error creating project";
+    return;
+  }
+
+  input.value = "";
+  msg.innerText = "Created ✅";
+
+  loadProjects();
+}
+
+/* =========================
+   MONACO EDITOR
+========================= */
+
+function initMonaco() {
+  require.config({
+    paths: {
+      vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs"
+    }
+  });
+
+  require(["vs/editor/editor.main"], function () {
+    editor = monaco.editor.create(document.getElementById("editor"), {
+      value: "// Start coding here...",
+      language: "javascript",
+      theme: "vs-dark"
+    });
+
+    editorReady = true;
+  });
+}
+
+/* =========================
+   FILE LOADER
+========================= */
+
+function loadFile(name) {
+  if (!editorReady) return;
+
+  editor.setValue(
+    `// Project: ${name}\nconsole.log("Hello Verion");`
+  );
+}
+
+</script>
+
+</body>
+</html>
