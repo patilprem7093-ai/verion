@@ -38,26 +38,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const userArea = document.getElementById("userArea");
 
-  // 🔐 Check user
   const { data, error } = await supabase.auth.getUser();
 
-if (error) {
-  console.error(error);
-}
+  if (error) {
+    console.error(error);
+  }
 
   if (!data.user) {
-    // ❌ Not logged in → redirect back
-    window.location.href = "/";
+    window.location.href = "index.html";
     return;
   }
 
-  // ✅ Logged in
   userArea.innerHTML = `
     <span class="mr-3 text-sm">${data.user.email}</span>
     <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
   `;
 
-  // 🔓 Logout
   window.logout = async () => {
     await supabase.auth.signOut();
     window.location.href = "index.html";
