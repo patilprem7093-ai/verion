@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const supabase = window.supabase.createClient(
     'https://glxteylzcrqejaxnifiz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+    'YOUR_ANON_KEY'
   );
 
   const modal = document.getElementById("loginModal");
@@ -62,44 +62,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // navigation
   document.getElementById("editorBtn").onclick = () => window.location.href = "editor.html";
-  document.getElementById("projectBtn").onclick = () => window.location.href = "dashboard-projects.html";
+  document.getElementById("projectBtn").onclick = () => window.location.href = "projects.html";
   document.getElementById("deployBtn").onclick = () => window.location.href = "deploy.html";
 
   // LOGIN
   document.getElementById("loginBtn").onclick = async () => {
     const email = document.getElementById("email").value;
-const password = document.getElementById("password").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      msg.innerText = "Enter email & password";
+      return;
+    }
 
     msg.innerText = "Logging in...";
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      msg.innerText = "Wrong login ❌";
+      msg.innerText = error.message;
       return;
     }
 
     msg.innerText = "Login success ✅";
-    setTimeout(() => window.location.href = "dashboard-projects.html", 1000);
+    setTimeout(() => window.location.href = "projects.html", 1000);
   };
 
   // SIGNUP
   document.getElementById("signupBtn").onclick = async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+    if (!email || !password) {
+      msg.innerText = "Enter email & password";
+      return;
+    }
 
-  if (!email || !password) {
-    msg.innerText = "Enter email & password";
-    return;
-  }
+    msg.innerText = "Creating account...";
 
-  msg.innerText = "Creating account...";
+    const { error } = await supabase.auth.signUp({ email, password });
 
-  const { error } = await supabase.auth.signUp({ email, password });
+    msg.innerText = error ? error.message : "Check email 📩";
+  };
 
-  msg.innerText = error ? error.message : "Check email 📩";
-};
+});
 </script>
 
 </body>
