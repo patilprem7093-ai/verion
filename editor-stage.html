@@ -5,32 +5,36 @@
   <title>Verion Editor Stage</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Monaco Editor -->
+  <!-- Monaco -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    #editor {
+    html, body {
       height: 100%;
+      margin: 0;
+    }
+    #editor {
       width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 
-<body class="bg-gray-950 text-white h-screen overflow-hidden">
+<body class="bg-gray-950 text-white flex flex-col h-screen overflow-hidden">
 
 <!-- TOP BAR -->
-<div class="flex justify-between items-center p-3 bg-gray-900 border-b border-gray-800">
+<div class="flex justify-between items-center p-3 bg-gray-900 border-b border-gray-800 shrink-0">
   <h1 class="font-bold">🚀 Verion Editor Stage</h1>
-  <button onclick="runCode()" class="bg-green-600 px-4 py-1 rounded">Run</button>
+  <button onclick="runCode()" class="bg-green-600 hover:bg-green-700 px-4 py-1 rounded">
+    Run
+  </button>
 </div>
 
-<!-- MAIN GRID -->
-<div class="grid grid-cols-2 h-full">
+<!-- MAIN -->
+<div class="grid grid-cols-2 flex-1 min-h-0">
 
   <!-- EDITOR -->
   <div id="editor" class="border-r border-gray-800"></div>
@@ -38,7 +42,7 @@
   <!-- OUTPUT -->
   <div class="p-4 bg-gray-900 overflow-auto">
     <h2 class="text-lg mb-2">Output</h2>
-    <pre id="output" class="text-green-400 text-sm"></pre>
+    <pre id="output" class="text-green-400 text-sm whitespace-pre-wrap"></pre>
   </div>
 
 </div>
@@ -46,8 +50,12 @@
 <script>
 let editor;
 
-// 🔥 Monaco Loader
-require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" }});
+// Monaco Loader Fix
+require.config({
+  paths: {
+    vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs"
+  }
+});
 
 require(["vs/editor/editor.main"], function () {
 
@@ -56,30 +64,55 @@ require(["vs/editor/editor.main"], function () {
 console.log("Hello World 🚀");`,
     language: "javascript",
     theme: "vs-dark",
-    automaticLayout: true
+    automaticLayout: true,
+    fontSize: 14
   });
 
+}, function (err) {
+  console.error("Monaco failed to load:", err);
 });
 
-// 🟢 RUN CODE
-function runCode() {
+// SAFE RUN FUNCTION
+async function runCode() {
+  const outputBox = document.getElementById("output");
+  outputBox.textContent = ""; // clear old output
+
+  if (!editor) {
+    outputBox.textContent = "Editor not loaded yet!";
+    return;
+  }
+
   const code = editor.getValue();
 
-  const outputBox = document.getElementById("output");
+  let logs = [];
+
+  // Enhanced console
+  const customConsole = {
+    log: (...args) => logs.push("[LOG] " + args.join(" ")),
+    error: (...args) => logs.push("[ERROR] " + args.join(" ")),
+    warn: (...args) => logs.push("[WARN] " + args.join(" ")),
+    info: (...args) => logs.push("[INFO] " + args.join(" "))
+  };
 
   try {
-    let logs = [];
+    // Async support + isolation
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
-    const customConsole = {
-      log: (...args) => logs.push(args.join(" "))
-    };
+    const func = new AsyncFunction("console", `
+      "use strict";
+      try {
+        ${code}
+      } catch (e) {
+        console.error(e.message);
+      }
+    `);
 
-    const func = new Function("console", code);
-    func(customConsole);
+    await func(customConsole);
 
-    outputBox.innerText = logs.join("\n") || "No output";
+    outputBox.textContent = logs.length ? logs.join("\n") : "No output";
+
   } catch (err) {
-    outputBox.innerText = "Error: " + err.message;
+    outputBox.textContent = "Fatal Error:\n" + err.stack;
   }
 }
 </script>
