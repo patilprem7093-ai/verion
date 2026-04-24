@@ -2,19 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Verion SaaS MVP</title>
+  <title>Verion SaaS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- 🔐 CSP SECURITY -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    connect-src 'self' https://*.supabase.co;
+    img-src 'self' data:;
+  ">
+
+  <!-- ✅ STYLES -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+  <!-- ⚠️ Load scripts AFTER DOM -->
 </head>
 
 <body class="bg-gray-900 text-white">
 
 <!-- NAV -->
 <nav class="flex justify-between p-4 bg-gray-800">
-  <h1 class="font-bold">🚀 Verion MVP</h1>
+  <h1 class="font-bold">🚀 Verion</h1>
   <div id="userArea"></div>
 </nav>
 
@@ -47,109 +57,135 @@
 
 </div>
 
-<script>
-/* =========================
-   CONFIG
-========================= */
+<script type="module">
+/* =========================================================
+   🔐 CONFIG (SAFE)
+========================================================= */
 
-const SUPABASE_URL = "https://glxteylzcrqejaxnifiz.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY"; // ⚠️ replace this
+// ❗ NEVER hardcode keys in production
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "PUBLIC_ANON_KEY";
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+/* Dynamic import (safer control) */
+const { createClient } = await import(
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
 );
 
-/* =========================
-   STATE
-========================= */
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =========================================================
+   🧠 STATE
+========================================================= */
 
 let currentUser = null;
 let editor = null;
 let editorReady = false;
 
-/* =========================
-   INIT
-========================= */
+/* =========================================================
+   🚀 INIT
+========================================================= */
 
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   await checkAuth();
   initUI();
-  initMonaco();
+  await initMonaco();
 }
 
-/* =========================
-   AUTH
-========================= */
+/* =========================================================
+   🔑 AUTH (HARDENED)
+========================================================= */
 
 async function checkAuth() {
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getSession();
 
-  if (error) console.error(error);
-
-  if (!data.user) {
-    window.location.href = "index.html";
+  if (error || !data.session) {
+    redirectToLogin();
     return;
   }
 
-  currentUser = data.user;
+  currentUser = data.session.user;
 
-  document.getElementById("userArea").innerHTML = `
-    <span class="text-sm mr-2">${currentUser.email}</span>
-    <button id="logoutBtn" class="bg-red-600 px-2 py-1 rounded">Logout</button>
-  `;
+  renderUser();
+}
 
-  document.getElementById("logoutBtn").onclick = logout;
+function redirectToLogin() {
+  window.location.href = "index.html";
+}
+
+function renderUser() {
+  const userArea = document.getElementById("userArea");
+
+  userArea.textContent = ""; // prevent injection
+
+  const span = document.createElement("span");
+  span.className = "text-sm mr-2";
+  span.textContent = currentUser.email;
+
+  const btn = document.createElement("button");
+  btn.textContent = "Logout";
+  btn.className = "bg-red-600 px-2 py-1 rounded";
+  btn.onclick = logout;
+
+  userArea.appendChild(span);
+  userArea.appendChild(btn);
 }
 
 async function logout() {
   await supabase.auth.signOut();
-  window.location.href = "index.html";
+  redirectToLogin();
 }
 
-/* =========================
-   UI EVENTS
-========================= */
+/* =========================================================
+   🧱 INPUT SANITIZER
+========================================================= */
+
+function sanitize(input) {
+  return input.replace(/[<>]/g, "");
+}
+
+/* =========================================================
+   📦 UI
+========================================================= */
 
 function initUI() {
-  document.getElementById("createBtn").onclick = createProject;
+  document.getElementById("createBtn").addEventListener("click", createProject);
   loadProjects();
 }
 
-/* =========================
-   PROJECTS
-========================= */
+/* =========================================================
+   📁 PROJECTS (SAFE)
+========================================================= */
 
 async function loadProjects() {
   const list = document.getElementById("projectList");
   const msg = document.getElementById("msg");
 
+  list.textContent = "";
+
   const { data, error } = await supabase
     .from("projects")
-    .select("*")
-    .eq("user_id", currentUser.id)
+    .select("id, name")
     .order("created_at", { ascending: false });
 
   if (error) {
-    msg.innerText = "Error loading projects";
+    msg.textContent = "Error loading projects";
     return;
   }
 
-  list.innerHTML = "";
-
   if (!data || data.length === 0) {
-    list.innerHTML = `<p class="text-gray-400 text-sm">No projects yet</p>`;
+    msg.textContent = "No projects yet";
     return;
   }
 
   data.forEach(project => {
     const div = document.createElement("div");
-    div.className = "bg-gray-700 p-2 rounded cursor-pointer";
-    div.innerText = project.name;
 
-    div.onclick = () => loadFile(project.name);
+    div.className = "bg-gray-700 p-2 rounded cursor-pointer";
+    div.textContent = project.name; // SAFE
+
+    div.addEventListener("click", () => loadFile(project.name));
 
     list.appendChild(div);
   });
@@ -158,65 +194,78 @@ async function loadProjects() {
 async function createProject() {
   const input = document.getElementById("projectName");
   const msg = document.getElementById("msg");
-  const name = input.value.trim();
 
-  if (!name) {
-    msg.innerText = "Enter project name";
+  let name = sanitize(input.value.trim());
+
+  if (!name || name.length > 50) {
+    msg.textContent = "Invalid name";
     return;
   }
 
-  msg.innerText = "Creating...";
+  msg.textContent = "Creating...";
 
   const { error } = await supabase.from("projects").insert([
-    {
-      name,
-      user_id: currentUser.id
-    }
+    { name }
   ]);
 
   if (error) {
-    msg.innerText = "Error creating project";
+    msg.textContent = "Failed";
     return;
   }
 
   input.value = "";
-  msg.innerText = "Created ✅";
+  msg.textContent = "Created ✅";
 
   loadProjects();
 }
 
-/* =========================
-   MONACO EDITOR
-========================= */
+/* =========================================================
+   🧠 MONACO (SAFE LOAD)
+========================================================= */
 
-function initMonaco() {
+async function initMonaco() {
+  await loadScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"
+  );
+
   require.config({
     paths: {
       vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs"
     }
   });
 
-  require(["vs/editor/editor.main"], function () {
-    editor = monaco.editor.create(document.getElementById("editor"), {
-      value: "// Start coding here...",
-      language: "javascript",
-      theme: "vs-dark"
-    });
+  return new Promise(resolve => {
+    require(["vs/editor/editor.main"], function () {
+      editor = monaco.editor.create(document.getElementById("editor"), {
+        value: "// Start coding...",
+        language: "javascript",
+        theme: "vs-dark"
+      });
 
-    editorReady = true;
+      editorReady = true;
+      resolve();
+    });
   });
 }
 
-/* =========================
-   FILE LOADER
-========================= */
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.body.appendChild(s);
+  });
+}
+
+/* =========================================================
+   📄 FILE LOADER
+========================================================= */
 
 function loadFile(name) {
   if (!editorReady) return;
 
-  editor.setValue(
-    `// Project: ${name}\nconsole.log("Hello Verion");`
-  );
+  editor.setValue(`// Project: ${name}`);
 }
 
 </script>
