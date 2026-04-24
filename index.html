@@ -85,17 +85,21 @@ const password = document.getElementById("password").value;
 
   // SIGNUP
   document.getElementById("signupBtn").onclick = async () => {
-    const email = email.value;
-    const password = password.value;
 
-    msg.innerText = "Creating account...";
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    const { error } = await supabase.auth.signUp({ email, password });
+  if (!email || !password) {
+    msg.innerText = "Enter email & password";
+    return;
+  }
 
-    msg.innerText = error ? error.message : "Check email 📩";
-  };
+  msg.innerText = "Creating account...";
 
-});
+  const { error } = await supabase.auth.signUp({ email, password });
+
+  msg.innerText = error ? error.message : "Check email 📩";
+};
 </script>
 
 </body>
