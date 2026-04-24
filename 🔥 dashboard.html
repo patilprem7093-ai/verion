@@ -5,7 +5,10 @@
   <title>Dashboard - Verion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -21,7 +24,7 @@
 <div class="p-6">
   <h2 class="text-2xl mb-4">Welcome</h2>
 
-  <div class="grid grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="bg-gray-800 p-4 rounded">Editor</div>
     <div class="bg-gray-800 p-4 rounded">Projects</div>
     <div class="bg-gray-800 p-4 rounded">Deploy</div>
@@ -31,9 +34,10 @@
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
 
+  // 🔐 Supabase init (move keys to env in production)
   const supabase = window.supabase.createClient(
     'https://glxteylzcrqejaxnifiz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+    'YOUR_PUBLIC_ANON_KEY'
   );
 
   const userArea = document.getElementById("userArea");
@@ -41,27 +45,59 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 🟡 Loading state
   userArea.innerHTML = `<span class="text-sm text-gray-400">Loading...</span>`;
 
-  // 🔐 Auth listener (BEST PRACTICE)
-  supabase.auth.onAuthStateChange((event, session) => {
+  try {
+    // ✅ Get current session FIRST (important fix)
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) throw error;
 
     if (!session) {
       window.location.href = "index.html";
       return;
     }
 
-    const user = session.user;
+    renderUser(session.user);
 
-    userArea.innerHTML = `
-      <span class="mr-3 text-sm">${user.email}</span>
-      <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
-    `;
-  });
+    // 🔁 Listen for auth changes
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        window.location.href = "index.html";
+      } else {
+        renderUser(session.user);
+      }
+    });
 
-  // 🔓 Logout
-  window.logout = async () => {
-    await supabase.auth.signOut();
+  } catch (err) {
+    console.error("Auth error:", err.message);
     window.location.href = "index.html";
-  };
+  }
+
+  // 👤 Render user UI (XSS safe)
+  function renderUser(user) {
+    userArea.innerHTML = "";
+
+    const emailSpan = document.createElement("span");
+    emailSpan.className = "mr-3 text-sm";
+    emailSpan.textContent = user.email;
+
+    const logoutBtn = document.createElement("button");
+    logoutBtn.className = "bg-red-600 px-3 py-1 rounded";
+    logoutBtn.textContent = "Logout";
+    logoutBtn.onclick = logout;
+
+    userArea.appendChild(emailSpan);
+    userArea.appendChild(logoutBtn);
+  }
+
+  // 🔓 Logout (FIXED BUG)
+  async function logout() {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = "index.html"; // ✅ fixed line
+    } catch (err) {
+      console.error("Logout error:", err.message);
+    }
+  }
 
 });
 </script>
