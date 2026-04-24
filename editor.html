@@ -1,12 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Editor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-900 text-white p-6">
+  <meta charset="UTF-8">
+  <title>Verion Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<h1 class="text-2xl">Editor 🚀 (Coming Soon)</h1>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Monaco Editor -->
+  <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-900 text-white">
+
+<!-- NAV -->
+<nav class="flex justify-between items-center p-4 bg-gray-800">
+  <h1 class="text-xl font-bold">🚀 Verion Editor</h1>
+
+  <div>
+    <button onclick="saveCode()" class="bg-green-600 px-4 py-2 rounded mr-2">
+      Save
+    </button>
+
+    <button onclick="loadCode()" class="bg-blue-600 px-4 py-2 rounded">
+      Load
+    </button>
+  </div>
+</nav>
+
+<!-- EDITOR -->
+<div id="editor" style="height:90vh;"></div>
+
+<script>
+let editor;
+
+// 🔐 Supabase
+const supabase = window.supabase.createClient(
+  'https://glxteylzcrqejaxnifiz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
+);
+
+// 🎯 Monaco Setup
+require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' }});
+
+require(["vs/editor/editor.main"], function () {
+  editor = monaco.editor.create(document.getElementById("editor"), {
+    value: "// Start coding 🚀",
+    language: "javascript",
+    theme: "vs-dark",
+    automaticLayout: true
+  });
+});
+
+// 🔐 Get User
+async function getUser() {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    alert("Login required");
+    window.location.href = "index.html";
+    return null;
+  }
+
+  return session.user;
+}
+
+// 💾 SAVE CODE
+async function saveCode() {
+  const user = await getUser();
+  if (!user) return;
+
+  const code = editor.getValue();
+
+  const { error } = await supabase
+    .from("codes")
+    .upsert([
+      {
+        user_id: user.id,
+        code: code
+      }
+    ]);
+
+  alert(error ? "Save failed ❌" : "Saved ✅");
+}
+
+// 📂 LOAD CODE
+async function loadCode() {
+  const user = await getUser();
+  if (!user) return;
+
+  const { data } = await supabase
+    .from("codes")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (data) {
+    editor.setValue(data.code);
+    alert("Loaded ✅");
+  } else {
+    alert("No saved code");
+  }
+}
+</script>
 
 </body>
 </html>
