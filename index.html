@@ -14,9 +14,7 @@
 <!-- NAV -->
 <nav class="flex justify-between p-4 bg-gray-800">
   <h1 class="text-xl font-bold">🚀 Verion</h1>
-  <button id="loginBtnNav" class="bg-blue-600 px-4 py-2 rounded">
-    Login
-  </button>
+  <button id="loginBtnNav" class="bg-blue-600 px-4 py-2 rounded">Login</button>
 </nav>
 
 <!-- MAIN -->
@@ -38,15 +36,8 @@
     <input id="email" placeholder="Email" class="w-full p-2 mb-2 bg-gray-700 rounded">
     <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-2 bg-gray-700 rounded">
 
-    <!-- LOGIN -->
-    <button id="loginBtn" class="bg-blue-600 w-full py-2 rounded mb-2">
-      Login
-    </button>
-
-    <!-- SIGNUP -->
-    <button id="signupBtn" class="bg-green-600 w-full py-2 rounded">
-      Create Account
-    </button>
+    <button id="loginBtn" class="bg-blue-600 w-full py-2 rounded mb-2">Login</button>
+    <button id="signupBtn" class="bg-green-600 w-full py-2 rounded">Create Account</button>
 
     <button id="closeBtn" class="w-full mt-2 text-sm text-gray-400">Close</button>
 
@@ -57,75 +48,51 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  console.log("JS Loaded ✅");
-
-  // Supabase
   const supabase = window.supabase.createClient(
     'https://glxteylzcrqejaxnifiz.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
   );
 
-  // Elements
   const modal = document.getElementById("loginModal");
   const msg = document.getElementById("msg");
 
-  // OPEN / CLOSE
+  // modal
   document.getElementById("loginBtnNav").onclick = () => modal.classList.remove("hidden");
   document.getElementById("closeBtn").onclick = () => modal.classList.add("hidden");
 
-  // FEATURE BUTTONS
-  document.getElementById("editorBtn").onclick = () => alert("Editor working ✅");
-  document.getElementById("projectBtn").onclick = () => alert("Projects working ✅");
-  document.getElementById("deployBtn").onclick = () => alert("Deploy working ✅");
+  // navigation
+  document.getElementById("editorBtn").onclick = () => window.location.href = "editor.html";
+  document.getElementById("projectBtn").onclick = () => window.location.href = "dashboard-projects.html";
+  document.getElementById("deployBtn").onclick = () => window.location.href = "deploy.html";
 
-  // 🔐 LOGIN ONLY
+  // LOGIN
   document.getElementById("loginBtn").onclick = async () => {
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    if (!email || !password) {
-      msg.innerText = "Enter email & password";
-      return;
-    }
+    const email = email.value;
+    const password = password.value;
 
     msg.innerText = "Logging in...";
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      msg.innerText = "Invalid login ❌";
+      msg.innerText = "Wrong login ❌";
       return;
     }
 
     msg.innerText = "Login success ✅";
-    setTimeout(() => modal.classList.add("hidden"), 1200);
+    setTimeout(() => window.location.href = "dashboard-projects.html", 1000);
   };
 
-  // 🆕 SIGNUP ONLY
+  // SIGNUP
   document.getElementById("signupBtn").onclick = async () => {
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    if (!email || !password) {
-      msg.innerText = "Enter email & password";
-      return;
-    }
+    const email = email.value;
+    const password = password.value;
 
     msg.innerText = "Creating account...";
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
 
-    msg.innerText = error
-      ? error.message
-      : "Check email for confirmation 📩";
+    msg.innerText = error ? error.message : "Check email 📩";
   };
 
 });
