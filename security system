@@ -1,5 +1,5 @@
 /*****************************************************************
- * 🚀 PRODUCTION BACKEND SETUP (FULL FIXED VERSION)
+ * 🔥 ULTRA HARDENED BACKEND (SECURE PRODUCTION READY)
  *****************************************************************/
 
 import express, { Request, Response, NextFunction } from "express";
@@ -9,68 +9,95 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 import pino from "pino";
 import dotenv from "dotenv";
+import LRU from "lru-cache";
 
 dotenv.config();
 
 /* =========================================================
-   🔐 SAFE INIT (STRICT)
+   🔐 ENV VALIDATION
+========================================================= */
+
+const REQUIRED_ENVS = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "FRONTEND_URL",
+];
+
+REQUIRED_ENVS.forEach((env) => {
+  if (!process.env[env]) {
+    throw new Error(`❌ Missing env: ${env}`);
+  }
+});
+
+/* =========================================================
+   🚀 INIT
 ========================================================= */
 
 const app = express();
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error("❌ Missing Supabase env variables");
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* =========================================================
-   🧠 LOGGER
-========================================================= */
-
-const logger = pino({ level: "info" });
+const logger = pino({
+  level: "info",
+  redact: ["req.headers.authorization"],
+});
 
 /* =========================================================
-   🛡️ SECURITY
+   🛡️ SECURITY LAYER
 ========================================================= */
 
+// ✅ Strict CORS
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );
 
-app.use(helmet());
-app.use(express.json({ limit: "10kb" }));
+// ✅ Helmet hardened
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        objectSrc: ["'none'"],
+      },
+    },
+  })
+);
+
+app.use(express.json({ limit: "5kb" }));
 app.disable("x-powered-by");
 
 /* =========================================================
-   📊 REQUEST LOGGING
-========================================================= */
-
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.url}`);
-  next();
-});
-
-/* =========================================================
-   🚦 RATE LIMIT
+   🚦 RATE LIMIT (STRONG)
 ========================================================= */
 
 app.use(
   "/api",
   rateLimit({
     windowMs: 60 * 1000,
-    max: 60,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
   })
 );
 
 /* =========================================================
-   🔑 AUTH
+   📊 LOGGER
+========================================================= */
+
+app.use((req, _res, next) => {
+  logger.info({ method: req.method, url: req.url });
+  next();
+});
+
+/* =========================================================
+   🔑 AUTH (SAFE)
 ========================================================= */
 
 interface AuthRequest extends Request {
@@ -83,161 +110,104 @@ const authMiddleware = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ error: "Missing token" });
     }
-
-    const token = authHeader.split(" ")[1];
 
     const { data, error } = await supabase.auth.getUser(token);
 
     if (error || !data?.user) {
-      logger.error(error);
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     req.user = data.user;
     next();
-  } catch (err) {
-    next(err);
+  } catch {
+    res.status(401).json({ error: "Auth failed" });
   }
 };
 
 /* =========================================================
-   ⚡ CACHE (SAFE + BOUNDED)
+   ⚡ CACHE (LRU SAFE)
 ========================================================= */
 
-const cache = new Map<string, { data: any; time: number }>();
-const CACHE_TTL = 1000 * 60 * 5;
-const MAX_CACHE_SIZE = 200;
-
-// safer cache insertion
-const setCache = (key: string, value: any) => {
-  if (cache.size > MAX_CACHE_SIZE) {
-    const firstKey = cache.keys().next().value;
-    cache.delete(firstKey);
-  }
-
-  cache.set(key, { data: value, time: Date.now() });
-};
-
-const getCache = (key: string) => {
-  const item = cache.get(key);
-
-  if (!item) return null;
-
-  if (Date.now() - item.time > CACHE_TTL) {
-    cache.delete(key);
-    return null;
-  }
-
-  return item.data;
-};
-
-/* =========================================================
-   ❌ ERROR HANDLER
-========================================================= */
-
-const errorHandler = (
-  err: any,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
-  logger.error(err);
-
-  res.status(500).json({
-    success: false,
-    message: "Internal Server Error",
-  });
-};
+const cache = new LRU<string, any>({
+  max: 200,
+  ttl: 1000 * 60 * 5,
+});
 
 /* =========================================================
    📦 ROUTES
 ========================================================= */
 
-app.get("/api/health", (_req: Request, res: Response) => {
+app.get("/api/health", (_req, res) => {
   res.json({ status: "OK" });
 });
 
-/* 🔒 PROTECTED ROUTE (FIXED SAFE FLOW) */
-app.get(
-  "/api/projects",
-  authMiddleware,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: "User missing" });
-      }
+app.get("/api/projects", authMiddleware, async (req: AuthRequest, res) => {
+  const userId = req.user?.id;
 
-      const userId = req.user.id;
-      const cacheKey = `projects-${userId}`;
-
-      const cached = getCache(cacheKey);
-      if (cached) {
-        return res.json({ source: "cache", data: cached });
-      }
-
-      // FIX: proper timeout + abort-safe pattern
-      const queryPromise = supabase
-        .from("projects")
-        .select("*")
-        .eq("user_id", userId);
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("DB timeout")), 8000)
-      );
-
-      const { data, error }: any = await Promise.race([
-        queryPromise,
-        timeoutPromise,
-      ]);
-
-      if (error) {
-        logger.error(error);
-        return res.status(500).json({ error: "Database error" });
-      }
-
-      setCache(cacheKey, data);
-
-      res.json({ source: "db", data });
-    } catch (err) {
-      next(err);
-    }
+  if (!userId) {
+    return res.status(401).json({ error: "Invalid user" });
   }
-);
+
+  const cacheKey = `projects-${userId}`;
+
+  if (cache.has(cacheKey)) {
+    return res.json({ source: "cache", data: cache.get(cacheKey) });
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", userId)
+      .abortSignal(controller.signal);
+
+    clearTimeout(timeout);
+
+    if (error) throw error;
+
+    cache.set(cacheKey, data);
+
+    res.json({ source: "db", data });
+  } catch (err) {
+    logger.error("DB ERROR");
+    res.status(500).json({ error: "Database failure" });
+  }
+});
 
 /* =========================================================
    ❌ 404
 ========================================================= */
 
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: "Route not found" });
+app.use((_req, res) => {
+  res.status(404).json({ error: "Not found" });
 });
 
 /* =========================================================
    ❌ ERROR HANDLER
 ========================================================= */
 
-app.use(errorHandler);
-
-/* =========================================================
-   🛑 GRACEFUL SHUTDOWN (SAFE)
-========================================================= */
-
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received. shutting down safely...");
-  process.exit(0);
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error("SERVER ERROR");
+  res.status(500).json({ error: "Internal error" });
 });
 
 /* =========================================================
-   🚀 START SERVER
+   🛑 GRACEFUL SHUTDOWN
 ========================================================= */
 
-const PORT = process.env.PORT || 3000;
+const server = app.listen(process.env.PORT || 3000, () => {
+  logger.info("🚀 Server started");
+});
 
-app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
+process.on("SIGTERM", () => {
+  logger.info("Shutting down...");
+  server.close(() => process.exit(0));
 });
