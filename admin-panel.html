@@ -20,32 +20,32 @@
 <!-- MAIN GRID -->
 <div class="grid grid-cols-3 gap-4 p-6">
 
-  <!-- LEFT: CONTROL PANEL -->
-  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+  <!-- CONTROL PANEL -->
+  <div class="bg-gray-900 p-4 rounded border border-gray-800">
     <h2 class="text-lg font-semibold mb-3">Control Panel</h2>
 
     <input id="dataInput" placeholder="Enter data..."
-      class="w-full p-2 mb-2 bg-gray-800 rounded">
+      class="w-full p-2 mb-2 bg-gray-800 rounded text-white outline-none">
 
-    <button onclick="saveData()"
-      class="w-full bg-green-600 py-2 rounded mb-2">
+    <button id="saveBtn"
+      class="w-full bg-green-600 py-2 rounded mb-2 hover:bg-green-700">
       Save Data
     </button>
 
-    <button onclick="loadData()"
-      class="w-full bg-blue-600 py-2 rounded">
+    <button id="loadBtn"
+      class="w-full bg-blue-600 py-2 rounded hover:bg-blue-700">
       Load Data
     </button>
   </div>
 
-  <!-- CENTER: OUTPUT / EXECUTION -->
-  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+  <!-- OUTPUT -->
+  <div class="bg-gray-900 p-4 rounded border border-gray-800">
     <h2 class="text-lg font-semibold mb-3">Execution Output</h2>
     <div id="outputBox" class="text-sm text-gray-300 space-y-2"></div>
   </div>
 
-  <!-- RIGHT: DATABASE VIEW -->
-  <div class="col-span-1 bg-gray-900 p-4 rounded border border-gray-800">
+  <!-- DATABASE -->
+  <div class="bg-gray-900 p-4 rounded border border-gray-800">
     <h2 class="text-lg font-semibold mb-3">Database Records</h2>
     <div id="dbBox" class="space-y-2 text-sm"></div>
   </div>
@@ -55,62 +55,78 @@
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const supabase = window.supabase.createClient(
-    'https://glxteylzcrqejaxnifiz.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE'
-  );
+  // ✅ Move to ENV in production
+  const SUPABASE_URL = 'https://glxteylzcrqejaxnifiz.supabase.co';
+  const SUPABASE_KEY = 'YOUR_PUBLIC_ANON_KEY';
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const userBox = document.getElementById("userBox");
   const outputBox = document.getElementById("outputBox");
   const dbBox = document.getElementById("dbBox");
+  const saveBtn = document.getElementById("saveBtn");
+  const loadBtn = document.getElementById("loadBtn");
 
-  // 🔐 CHECK USER
-  const { data } = await supabase.auth.getUser();
+  const setOutput = (msg, color="gray") => {
+    outputBox.innerHTML = `<p class="text-${color}-400">${msg}</p>`;
+  };
 
-  if (!data.user) {
+  const sanitize = (str) => {
+    return str.replace(/[<>]/g, "");
+  };
+
+  // 🔐 AUTH CHECK
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
     window.location.href = "index.html";
     return;
   }
 
-  const user = data.user;
-
   userBox.innerHTML = `
-    <span class="text-sm mr-2">${user.email}</span>
-    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded">Logout</button>
+    <span class="text-sm mr-2">${sanitize(user.email)}</span>
+    <button id="logoutBtn" class="bg-red-600 px-3 py-1 rounded">Logout</button>
   `;
 
-  window.logout = async () => {
+  document.getElementById("logoutBtn").onclick = async () => {
     await supabase.auth.signOut();
     window.location.href = "index.html";
   };
 
-  // 🟢 SAVE DATA (PERSISTENCE)
-  window.saveData = async () => {
-    const value = document.getElementById("dataInput").value;
+  // 🟢 SAVE DATA
+  saveBtn.onclick = async () => {
+    const input = document.getElementById("dataInput");
+    const value = sanitize(input.value.trim());
 
     if (!value) {
-      outputBox.innerHTML = `<p class="text-red-400">Enter data first</p>`;
+      setOutput("Enter valid data", "red");
       return;
     }
+
+    saveBtn.disabled = true;
+    setOutput("Saving...", "blue");
 
     const { error } = await supabase.from("projects").insert([
-      {
-        name: value,
-        user_id: user.id
-      }
+      { name: value, user_id: user.id }
     ]);
 
+    saveBtn.disabled = false;
+
     if (error) {
-      outputBox.innerHTML = `<p class="text-red-400">Save failed</p>`;
+      console.error(error);
+      setOutput("Save failed", "red");
       return;
     }
 
-    outputBox.innerHTML = `<p class="text-green-400">Data saved successfully ✅</p>`;
+    input.value = "";
+    setOutput("Data saved successfully ✅", "green");
     loadData();
   };
 
-  // 🔵 LOAD DATA (READ)
-  window.loadData = async () => {
+  // 🔵 LOAD DATA
+  async function loadData() {
+    loadBtn.disabled = true;
+    setOutput("Loading...", "blue");
 
     const { data, error } = await supabase
       .from("projects")
@@ -118,14 +134,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
+    loadBtn.disabled = false;
+
     if (error) {
-      outputBox.innerHTML = `<p class="text-red-400">Load failed</p>`;
+      console.error(error);
+      setOutput("Load failed", "red");
       return;
     }
 
     dbBox.innerHTML = "";
 
-    if (!data.length) {
+    if (!data || data.length === 0) {
       dbBox.innerHTML = `<p class="text-gray-500">No data found</p>`;
       return;
     }
@@ -133,14 +152,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     data.forEach(item => {
       const div = document.createElement("div");
       div.className = "bg-gray-800 p-2 rounded";
-      div.innerText = item.name;
+      div.textContent = item.name; // ✅ safer than innerHTML
       dbBox.appendChild(div);
     });
 
-    outputBox.innerHTML = `<p class="text-blue-400">Data loaded ✔</p>`;
-  };
+    setOutput("Data loaded ✔", "blue");
+  }
 
-  // auto load
+  loadBtn.onclick = loadData;
+
+  // 🚀 AUTO LOAD
   loadData();
 
 });
