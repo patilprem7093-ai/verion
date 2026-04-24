@@ -1,25 +1,22 @@
 /*****************************************************************
- * 🚀 VERION IDE - CORE FEATURE MODULES (HARDENED VERSION)
+ * 🚀 VERION IDE - CORE FEATURE MODULES (FIXED & HARDENED)
  *****************************************************************/
+
+import * as monaco from "monaco-editor";
+import { createClient } from "@supabase/supabase-js";
 
 /* =========================================================
    ⌨️ 1. DEVELOPER KEYBOARD SYSTEM
 ========================================================= */
 
-import * as monaco from "monaco-editor";
-
 export const keyboardButtons = [
-  "{ }",
-  "[ ]",
-  "( )",
-  "< >",
-  "/",
-  "Tab",
-  "=>",
-  ";",
+  "{ }", "[ ]", "( )", "< >", "/", "Tab", "=>", ";",
 ];
 
-export const insertAtCursor = (editor: any, text: string) => {
+export const insertAtCursor = (
+  editor: monaco.editor.IStandaloneCodeEditor | null,
+  text: string
+) => {
   if (!editor) return;
 
   const position = editor.getPosition();
@@ -45,30 +42,35 @@ export const insertAtCursor = (editor: any, text: string) => {
    📶 2. OFFLINE MODE + AUTO SYNC SYSTEM
 ========================================================= */
 
-import { createClient } from "@supabase/supabase-js";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let isSyncing = false;
 
 /* Safe JSON */
-const safeParse = (data: string | null) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
   try {
-    return JSON.parse(data || "[]");
+    return data ? JSON.parse(data) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 };
 
-const getQueue = () => safeParse(localStorage.getItem("sync_queue"));
+const getQueue = () => safeParse<any[]>(localStorage.getItem("sync_queue"), []);
 
-const setQueue = (queue: any[]) =>
+const setQueue = (queue: any[]) => {
   localStorage.setItem("sync_queue", JSON.stringify(queue));
+};
 
 export const saveOfflineProject = (project: any) => {
+  if (!project?.id) return;
+
   localStorage.setItem(
     `offline_project_${project.id}`,
     JSON.stringify(project)
@@ -76,10 +78,15 @@ export const saveOfflineProject = (project: any) => {
 };
 
 export const getOfflineProject = (id: string) => {
-  return safeParse(localStorage.getItem(`offline_project_${id}`));
+  return safeParse<any | null>(
+    localStorage.getItem(`offline_project_${id}`),
+    null
+  );
 };
 
 export const queueSync = (data: any) => {
+  if (!data || typeof data !== "object") return;
+
   const queue = getQueue();
   queue.push(data);
   setQueue(queue);
@@ -93,17 +100,22 @@ export const processSyncQueue = async () => {
   const queue = getQueue();
 
   while (queue.length > 0) {
-    const item = queue[0]; // don't shift yet
+    const item = queue[0];
 
     try {
       const { error } = await supabase.from("projects").upsert(item);
+
       if (error) throw error;
 
-      queue.shift(); // remove only on success
+      queue.shift();
       setQueue(queue);
+
     } catch (err) {
-      console.error("Sync failed, retry later:", err);
-      break;
+      console.error("Sync failed, dropping bad item:", err);
+
+      // 🔥 Drop bad item instead of blocking queue forever
+      queue.shift();
+      setQueue(queue);
     }
   }
 
@@ -158,9 +170,13 @@ export const getTemplate = (type: keyof typeof templates) =>
    🐙 4. GITHUB IMPORT / EXPORT SYSTEM
 ========================================================= */
 
-/* Unicode-safe base64 */
-const encodeBase64 = (str: string) =>
-  btoa(unescape(encodeURIComponent(str)));
+const encodeBase64 = (str: string) => {
+  return btoa(
+    new TextEncoder()
+      .encode(str)
+      .reduce((data, byte) => data + String.fromCharCode(byte), "")
+  );
+};
 
 export const importGitHubFile = async (url: string) => {
   const rawUrl = url
@@ -177,7 +193,8 @@ export const pushToGitHub = async (
   token: string,
   repo: string,
   filePath: string,
-  content: string
+  content: string,
+  branch = "main"
 ) => {
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
 
@@ -190,8 +207,7 @@ export const pushToGitHub = async (
   let sha;
 
   try {
-    const getRes = await fetch(apiUrl, { headers });
-
+    const getRes = await fetch(`${apiUrl}?ref=${branch}`, { headers });
     if (getRes.ok) {
       const data = await getRes.json();
       sha = data.sha;
@@ -205,6 +221,7 @@ export const pushToGitHub = async (
       message: "Update from VERION IDE",
       content: encodeBase64(content),
       sha,
+      branch,
     }),
   });
 
@@ -232,12 +249,10 @@ export const useLayoutMode = () => {
   return { setMode, getMode };
 };
 
-/* Prevent duplicate listeners */
-let swipeInitialized = false;
+let swipeCleanup: (() => void) | null = null;
 
-export const handleSwipe = (setMode: Function) => {
-  if (swipeInitialized) return;
-  swipeInitialized = true;
+export const handleSwipe = (setMode: (mode: LayoutMode) => void) => {
+  if (swipeCleanup) return;
 
   let startX = 0;
 
@@ -254,6 +269,14 @@ export const handleSwipe = (setMode: Function) => {
 
   window.addEventListener("touchstart", onStart);
   window.addEventListener("touchend", onEnd);
+
+  swipeCleanup = () => {
+    window.removeEventListener("touchstart", onStart);
+    window.removeEventListener("touchend", onEnd);
+    swipeCleanup = null;
+  };
+
+  return swipeCleanup;
 };
 
 /* =========================================================
