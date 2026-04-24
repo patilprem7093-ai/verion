@@ -1,0 +1,284 @@
+/*****************************************************************
+ * 🚀 VERION IDE - CORE FEATURE MODULES (HARDENED VERSION)
+ *****************************************************************/
+
+/* =========================================================
+   ⌨️ 1. DEVELOPER KEYBOARD SYSTEM
+========================================================= */
+
+import * as monaco from "monaco-editor";
+
+export const keyboardButtons = [
+  "{ }",
+  "[ ]",
+  "( )",
+  "< >",
+  "/",
+  "Tab",
+  "=>",
+  ";",
+];
+
+export const insertAtCursor = (editor: any, text: string) => {
+  if (!editor) return;
+
+  const position = editor.getPosition();
+  if (!position) return;
+
+  editor.executeEdits("", [
+    {
+      range: new monaco.Range(
+        position.lineNumber,
+        position.column,
+        position.lineNumber,
+        position.column
+      ),
+      text,
+      forceMoveMarkers: true,
+    },
+  ]);
+
+  editor.focus();
+};
+
+/* =========================================================
+   📶 2. OFFLINE MODE + AUTO SYNC SYSTEM
+========================================================= */
+
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
+
+let isSyncing = false;
+
+/* Safe JSON */
+const safeParse = (data: string | null) => {
+  try {
+    return JSON.parse(data || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const getQueue = () => safeParse(localStorage.getItem("sync_queue"));
+
+const setQueue = (queue: any[]) =>
+  localStorage.setItem("sync_queue", JSON.stringify(queue));
+
+export const saveOfflineProject = (project: any) => {
+  localStorage.setItem(
+    `offline_project_${project.id}`,
+    JSON.stringify(project)
+  );
+};
+
+export const getOfflineProject = (id: string) => {
+  return safeParse(localStorage.getItem(`offline_project_${id}`));
+};
+
+export const queueSync = (data: any) => {
+  const queue = getQueue();
+  queue.push(data);
+  setQueue(queue);
+};
+
+export const processSyncQueue = async () => {
+  if (!navigator.onLine || isSyncing) return;
+
+  isSyncing = true;
+
+  const queue = getQueue();
+
+  while (queue.length > 0) {
+    const item = queue[0]; // don't shift yet
+
+    try {
+      const { error } = await supabase.from("projects").upsert(item);
+      if (error) throw error;
+
+      queue.shift(); // remove only on success
+      setQueue(queue);
+    } catch (err) {
+      console.error("Sync failed, retry later:", err);
+      break;
+    }
+  }
+
+  isSyncing = false;
+};
+
+/* =========================================================
+   🚀 3. ONE-CLICK STARTER TEMPLATES
+========================================================= */
+
+export const templates = {
+  blank: { files: {} },
+
+  html_tailwind: {
+    files: {
+      "index.html": `<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-4">
+<h1 class="text-xl font-bold">Hello World</h1>
+</body>
+</html>`,
+    },
+  },
+
+  react: {
+    files: {
+      "App.jsx": `export default function App() {
+  return <h1>React App</h1>;
+}`,
+    },
+  },
+
+  node: {
+    files: {
+      "server.js": `const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => res.send('Hello'));
+
+app.listen(3000);`,
+    },
+  },
+};
+
+export const getTemplate = (type: keyof typeof templates) =>
+  templates[type] || templates.blank;
+
+/* =========================================================
+   🐙 4. GITHUB IMPORT / EXPORT SYSTEM
+========================================================= */
+
+/* Unicode-safe base64 */
+const encodeBase64 = (str: string) =>
+  btoa(unescape(encodeURIComponent(str)));
+
+export const importGitHubFile = async (url: string) => {
+  const rawUrl = url
+    .replace("github.com", "raw.githubusercontent.com")
+    .replace("/blob/", "/");
+
+  const res = await fetch(rawUrl);
+  if (!res.ok) throw new Error("Failed to fetch file");
+
+  return await res.text();
+};
+
+export const pushToGitHub = async (
+  token: string,
+  repo: string,
+  filePath: string,
+  content: string
+) => {
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+
+  const headers = {
+    Authorization: `token ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/vnd.github+json",
+  };
+
+  let sha;
+
+  try {
+    const getRes = await fetch(apiUrl, { headers });
+
+    if (getRes.ok) {
+      const data = await getRes.json();
+      sha = data.sha;
+    }
+  } catch {}
+
+  const res = await fetch(apiUrl, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({
+      message: "Update from VERION IDE",
+      content: encodeBase64(content),
+      sha,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("GitHub push failed");
+  }
+};
+
+/* =========================================================
+   📱 5. SPLIT SCREEN + SWIPE UI CONTROLLER
+========================================================= */
+
+type LayoutMode = "editor" | "preview" | "split";
+
+export const useLayoutMode = () => {
+  const setMode = (mode: LayoutMode) => {
+    localStorage.setItem("layout_mode", mode);
+  };
+
+  const getMode = (): LayoutMode => {
+    const mode = localStorage.getItem("layout_mode");
+    return mode === "editor" || mode === "preview" ? mode : "split";
+  };
+
+  return { setMode, getMode };
+};
+
+/* Prevent duplicate listeners */
+let swipeInitialized = false;
+
+export const handleSwipe = (setMode: Function) => {
+  if (swipeInitialized) return;
+  swipeInitialized = true;
+
+  let startX = 0;
+
+  const onStart = (e: TouchEvent) => {
+    startX = e.touches[0].clientX;
+  };
+
+  const onEnd = (e: TouchEvent) => {
+    const endX = e.changedTouches[0].clientX;
+
+    if (startX - endX > 50) setMode("preview");
+    if (endX - startX > 50) setMode("editor");
+  };
+
+  window.addEventListener("touchstart", onStart);
+  window.addEventListener("touchend", onEnd);
+};
+
+/* =========================================================
+   🌍 6. COMMUNITY / EXPLORE SYSTEM
+========================================================= */
+
+export const fetchCommunityProjects = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("public_projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return [];
+  }
+};
+
+export const forkProject = (project: any, userId: string) => ({
+  ...project,
+  id: undefined,
+  user_id: userId,
+  parent_id: project.id,
+});
