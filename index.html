@@ -61,9 +61,26 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("closeBtn").onclick = () => modal.classList.add("hidden");
 
   // navigation
-  document.getElementById("editorBtn").onclick = () => window.location.href = "editor.html";
-  document.getElementById("projectBtn").onclick =() => window.location.href = "dashboard-projects.html";
-  document.getElementById("deployBtn").onclick = () => window.location.href = "deploy.html";
+  function requireLogin(page) {
+  supabase.auth.getSession().then(({ data }) => {
+    if (!data.session) {
+      modal.classList.remove("hidden");
+      msg.innerText = "Login first";
+      return;
+    }
+
+    window.location.href = page;
+  });
+}
+
+document.getElementById("editorBtn").onclick =
+() => requireLogin("editor.html");
+
+document.getElementById("projectBtn").onclick =
+() => requireLogin("dashboard-projects.html");
+
+document.getElementById("deployBtn").onclick =
+() => requireLogin("deploy.html");
 
   // LOGIN
   document.getElementById("loginBtn").onclick = async () => {
