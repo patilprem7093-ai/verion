@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Verion Editor</title>
+  <title>Verion IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,103 +13,130 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: Inter, system-ui, sans-serif;
     }
   </style>
 </head>
-<body class="bg-[#0d1117] text-white">
+
+<body class="bg-[#0b0f17] text-white">
 
 <div class="flex h-screen">
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-[#161b22] border-r border-gray-800 flex flex-col shrink-0">
-    <div class="p-4 border-b border-gray-800">
-      <h1 class="text-lg font-bold">🚀 Verion</h1>
-      <p class="text-xs text-gray-400 mt-1">Cloud IDE</p>
+  <!-- LEFT SIDEBAR -->
+  <aside class="w-72 bg-[#111827] border-r border-gray-800 flex flex-col">
+
+    <div class="p-5 border-b border-gray-800">
+      <h1 class="text-xl font-bold">🚀 Verion</h1>
+      <p class="text-xs text-gray-400 mt-1">Professional Cloud IDE</p>
     </div>
 
-    <div class="p-4">
-      <button type="button"
-        class="w-full bg-blue-600 hover:bg-blue-500 rounded p-2 text-sm">
+    <div class="p-4 space-y-3">
+      <button class="w-full bg-blue-600 hover:bg-blue-500 rounded-lg py-2 font-medium">
         + New Project
       </button>
+
+      <input
+        placeholder="Search files..."
+        class="w-full bg-[#1f2937] px-3 py-2 rounded-lg text-sm outline-none"
+      />
     </div>
 
     <div class="px-4 text-xs uppercase text-gray-500 mb-2">
-      Files
+      Explorer
     </div>
 
-    <div class="space-y-1 px-2">
-      <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-[#21262d]">
+    <div class="px-2 space-y-1 overflow-auto">
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-[#1f2937]">
+        📁 My App
+      </button>
+
+      <button class="w-full text-left px-8 py-2 rounded hover:bg-[#1f2937]">
         📄 index.html
       </button>
 
-      <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-[#21262d]">
+      <button class="w-full text-left px-8 py-2 rounded hover:bg-[#1f2937]">
         🎨 style.css
       </button>
 
-      <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-[#21262d]">
+      <button class="w-full text-left px-8 py-2 rounded hover:bg-[#1f2937]">
         ⚙ script.js
       </button>
     </div>
+
   </aside>
 
-  <!-- Main -->
+  <!-- CENTER -->
   <main class="flex-1 flex flex-col min-w-0">
 
-    <!-- Topbar -->
-    <header class="h-14 bg-[#161b22] border-b border-gray-800 flex items-center justify-between px-5 shrink-0">
-      <div class="font-medium truncate">
-        Project: My First App
-      </div>
+    <!-- TOPBAR -->
+    <header class="h-14 bg-[#111827] border-b border-gray-800 flex items-center justify-between px-5">
 
       <div class="flex gap-2">
-        <button type="button" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm">
-          Save
-        </button>
-
-        <button type="button" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm">
-          Run
-        </button>
-
-        <button type="button" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-sm">
-          AI
-        </button>
-
-        <button type="button" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm">
-          Deploy
-        </button>
+        <button class="bg-[#1f2937] px-4 py-2 rounded-lg text-sm">Save</button>
+        <button class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-sm">Run</button>
+        <button class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm">AI</button>
+        <button class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm">Deploy</button>
       </div>
+
+      <div class="text-sm text-gray-400">
+        Project: My App
+      </div>
+
     </header>
 
-    <!-- Workspace -->
+    <!-- FILE TABS -->
+    <div class="h-12 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 gap-2">
+      <button class="bg-[#1f2937] px-4 py-2 rounded text-sm">index.html</button>
+      <button class="hover:bg-[#1f2937] px-4 py-2 rounded text-sm text-gray-400">style.css</button>
+      <button class="hover:bg-[#1f2937] px-4 py-2 rounded text-sm text-gray-400">script.js</button>
+    </div>
+
+    <!-- WORKSPACE -->
     <div class="flex flex-1 min-h-0">
 
-      <!-- Editor -->
-      <section class="flex-1 border-r border-gray-800 flex flex-col min-w-0">
-        <div class="bg-[#161b22] px-4 py-2 border-b border-gray-800 text-sm text-gray-300">
-          index.html
-        </div>
+      <!-- CODE -->
+      <section class="flex-1 flex flex-col border-r border-gray-800">
 
-        <div class="flex-1 overflow-auto p-5 font-mono text-sm text-gray-400">
+        <div class="flex-1 bg-[#0d1117] p-5 overflow-auto text-sm text-gray-300 font-mono leading-7">
 <pre class="whitespace-pre-wrap">
-&lt;h1&gt;Hello Verion&lt;/h1&gt;
-&lt;p&gt;Professional Cloud IDE&lt;/p&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Verion&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Hello World&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;
 </pre>
         </div>
+
+        <!-- CONSOLE -->
+        <div class="h-40 bg-black border-t border-gray-800 p-4 overflow-auto">
+          <div class="text-green-400 text-sm">Console ready...</div>
+        </div>
+
       </section>
 
-      <!-- Preview -->
-      <section class="w-[40%] min-w-[320px] flex flex-col shrink-0">
-        <div class="bg-[#161b22] px-4 py-2 border-b border-gray-800 text-sm text-gray-300">
-          Live Preview
+      <!-- RIGHT PANEL -->
+      <aside class="w-96 bg-[#111827] flex flex-col">
+
+        <div class="h-12 border-b border-gray-800 flex items-center px-4 font-medium">
+          AI Assistant + Preview
+        </div>
+
+        <div class="p-4 border-b border-gray-800">
+          <button class="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded-lg">
+            Open AI Assistant
+          </button>
         </div>
 
         <iframe
           title="Preview"
-          sandbox="allow-scripts"
           class="flex-1 bg-white border-0">
         </iframe>
-      </section>
+
+      </aside>
 
     </div>
 
