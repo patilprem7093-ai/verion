@@ -53,6 +53,11 @@
       border-radius:999px;
       font-weight:700;
       cursor:pointer;
+      transition:.2s;
+    }
+
+    .chip:hover{
+      transform:scale(1.03);
     }
 
     .searchbox{
@@ -64,22 +69,24 @@
       border-radius:12px;
       outline:none;
       font-size:14px;
+      min-width:220px;
     }
 
-    .console-ok{
-      color:#22c55e;
-    }
+    .console-ok{ color:#22c55e; }
+    .console-warn{ color:#eab308; }
+    .console-err{ color:#ef4444; }
+    .console-ai{ color:#8b5cf6; }
 
-    .console-warn{
-      color:#eab308;
-    }
-
-    .console-err{
-      color:#ef4444;
-    }
-
-    .console-ai{
-      color:#8b5cf6;
+    .logo-v{
+      display:inline-flex;
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      background:#4F7C82;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      margin-right:10px;
     }
   </style>
 </head>
@@ -91,9 +98,12 @@
   <!-- LEFT SIDEBAR -->
   <aside class="w-72 panel border-r flex flex-col">
 
-    <div class="p-5 border-b border-gray-800">
-      <h1 class="text-xl font-bold">● VERION</h1>
-      <p class="text-xs text-gray-400 mt-1">Professional Cloud IDE</p>
+    <div class="p-5 border-b border-gray-800 flex items-center">
+      <span class="logo-v">V</span>
+      <div>
+        <h1 class="text-xl font-bold">VERION</h1>
+        <p class="text-xs text-gray-400 mt-1">Professional Cloud IDE</p>
+      </div>
     </div>
 
     <div class="p-4">
@@ -114,17 +124,9 @@
     </div>
 
     <div class="px-2 space-y-1">
-      <button onclick="switchFile('html')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">
-        📄 index.html
-      </button>
-
-      <button onclick="switchFile('css')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">
-        🎨 style.css
-      </button>
-
-      <button onclick="switchFile('js')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">
-        ⚙ script.js
-      </button>
+      <button onclick="switchFile('html')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">📄 index.html</button>
+      <button onclick="switchFile('css')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">🎨 style.css</button>
+      <button onclick="switchFile('js')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">⚙ script.js</button>
     </div>
 
   </aside>
@@ -135,20 +137,20 @@
     <!-- TOPBAR -->
     <header class="h-16 panel border-b flex items-center gap-3 px-5 shrink-0">
 
-      <div class="font-bold text-lg shrink-0">
-  V VERION
-</div>
+      <div class="flex items-center font-bold text-lg shrink-0">
+        <span class="logo-v">V</span>
+        VERION
+      </div>
 
-<input
-  id="smartSearch"
-  class="searchbox"
-  placeholder="Search bar"
->
+      <input
+        id="smartSearch"
+        class="searchbox"
+        placeholder="Search bar"
+      >
 
-<button id="aiFocusBtn" class="chip shrink-0">
-  AI
-</button>
-      
+      <button id="aiFocusBtn" class="chip shrink-0">
+        AI
+      </button>
 
       <button class="btn">Preview</button>
       <button onclick="saveCode()" class="btn">Save</button>
