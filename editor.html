@@ -70,11 +70,8 @@
   <main class="flex-1 flex flex-col min-w-0 h-full relative">
 
     <header class="h-14 panel border-b flex items-center gap-3 px-4 shrink-0 overflow-x-auto no-scrollbar">
-      
       <div onclick="toggleExplorer()" class="logo-v md:hidden hover:scale-105 transition-transform">V</div>
-
       <input id="smartSearch" class="searchbox hidden sm:block" placeholder="Search across files...">
-
       <button onclick="toggleAI()" class="btn !bg-purple-600 !px-4 flex items-center gap-2 hover:scale-105 transition-transform shadow-lg shadow-purple-500/20">
         <span>✨</span> Ask AI
       </button>
@@ -99,7 +96,7 @@
         <textarea id="editor" oninput="updateMemory()" class="flex-1 bg-[#0d1117] text-gray-100 p-5 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
 
         <div class="h-32 bg-black border-t border-gray-800 p-4 overflow-auto shrink-0 shadow-inner">
-          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">System initialized...<br>Verion OS ready.</div>
+          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">Connecting to Verion Cloud Server...</div>
         </div>
       </section>
 
@@ -108,9 +105,7 @@
           <div class="font-bold text-sm flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> Live Output
           </div>
-          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600 shadow-md">
-            Stop Execution
-          </button>
+          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600 shadow-md">Stop Execution</button>
         </div>
         <iframe id="previewFrame" class="flex-1 w-full h-full bg-white border-none"></iframe>
       </div>
@@ -120,12 +115,10 @@
           <span class="font-bold text-purple-400 flex items-center gap-2">✨ AI Assistant</span>
           <button onclick="toggleAI()" class="text-gray-400 hover:text-white text-2xl px-2 transition-colors">&times;</button>
         </div>
-
         <div class="p-4 border-b border-gray-800 bg-[#0f172a]/50">
           <textarea id="aiPrompt" class="w-full h-24 bg-[#1f2937] rounded-lg p-3 text-sm text-white focus:ring-2 ring-purple-500 transition-all shadow-inner" placeholder="Ask AI to write code, find bugs..."></textarea>
           <button id="askAiBtn" class="mt-3 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">Send to AI</button>
         </div>
-
         <div id="aiOutput" class="flex-1 overflow-auto p-4 text-xs leading-6 text-white space-y-3">
           <p class="console-ai bg-purple-900/20 p-3 rounded-lg border border-purple-500/20">AI engine is online. Connect API keys to start generating code.</p>
         </div>
@@ -137,11 +130,18 @@
 </div>
 
 <script>
+// --- SUPABASE CONFIGURATION ---
+const SUPABASE_URL = "https://glxteylzcrqejaxnifiz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+
 // --- DEFAULT TEMPLATE ---
 const defaultFiles = {
-  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is running live!</p>\n</div>",
+  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is now saved in the Cloud!</p>\n</div>",
   css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
-  js: "console.log('Verion Ready!');"
+  js: "console.log('Verion Connected to Supabase!');"
 };
 
 let files = {};
@@ -157,16 +157,35 @@ const leftSidebar = document.getElementById("leftSidebar");
 const rightSidebar = document.getElementById("rightSidebar");
 const mobileOverlay = document.getElementById("mobileOverlay");
 
-// --- SYSTEM BOOTUP (Load Saved Code) ---
-function loadWorkspace() {
-  const savedData = localStorage.getItem("verion_project_data");
-  if (savedData) {
-    files = JSON.parse(savedData);
-    logMsg("Restored saved project from local storage 📂", "ok");
-  } else {
-    files = JSON.parse(JSON.stringify(defaultFiles)); // Load defaults
+// --- BOOT PROCESS (Auth & Load Workspace) ---
+async function bootApp() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error || !session) {
+    alert("Authentication required. Please login first.");
+    window.location.href = "index.html"; // Agar user login nahi hai toh bahar fenk do
+    return;
   }
-  switchFile("html"); // Open HTML by default
+  
+  currentUser = session.user;
+  logMsg("User authenticated. Fetching Cloud Workspace...", "warn");
+  
+  // Database se code fetch karna
+  const { data, fetchError } = await supabase
+    .from('workspaces')
+    .select('files_data')
+    .eq('user_id', currentUser.id)
+    .single();
+
+  if (data && data.files_data) {
+    files = data.files_data;
+    logMsg("Cloud Workspace loaded successfully ☁️✅", "ok");
+  } else {
+    files = JSON.parse(JSON.stringify(defaultFiles));
+    logMsg("New workspace created.", "ok");
+  }
+  
+  switchFile("html");
 }
 
 // Update memory while typing
@@ -176,30 +195,39 @@ function updateMemory() {
 
 // Switch Files
 function switchFile(type){
-  updateMemory(); // Save current before switching
+  updateMemory(); 
   currentFile = type;
-
   if(type==="html") activeFile.innerText = "index.html";
   if(type==="css") activeFile.innerText = "style.css";
   if(type==="js") activeFile.innerText = "script.js";
-
   editor.value = files[type];
 }
 
-// ✨ REAL SAVE BUTTON (Local Storage) ✨
-function saveCode(){
+// ✨ REAL CLOUD SAVE BUTTON (Supabase Upsert) ✨
+async function saveCode(){
   updateMemory(); 
-  // Browser ki memory mein save kar diya
-  localStorage.setItem("verion_project_data", JSON.stringify(files));
-  logMsg("Code saved securely! ✅ (Ready for Cloud Sync)", "ok");
+  logMsg("Syncing changes to cloud...", "warn");
+
+  const { error } = await supabase
+    .from('workspaces')
+    .upsert({ 
+      user_id: currentUser.id, 
+      files_data: files,
+      updated_at: new Date()
+    });
+
+  if (error) {
+    logMsg("Cloud Save Failed: " + error.message, "err");
+  } else {
+    logMsg("Code saved securely to Supabase Cloud ☁️✅", "ok");
+  }
 }
 
-// ✨ Create New Project Logic (Clears everything)
+// ✨ Create New Project Logic
 function createNewProject() {
   const confirmNew = confirm("Start a new blank project? Unsaved changes will be lost.");
   if(!confirmNew) return;
 
-  // Reset to empty
   files = {
     html: "\n",
     css: "/* Write your CSS here */\n",
@@ -208,10 +236,6 @@ function createNewProject() {
 
   currentFile = "html";
   switchFile("html");
-  
-  // Wipe memory
-  localStorage.removeItem("verion_project_data");
-  
   closeAllPanels(); 
   consoleBox.innerHTML = "";
   logMsg("Workspace cleared. Blank project ready 🚀", "ok");
@@ -220,7 +244,6 @@ function createNewProject() {
 // ✨ THE MAGIC RUN BUTTON ✨
 function runCode(){
   saveCode(); // Auto save before run
-  
   const combinedCode = `
     <!DOCTYPE html>
     <html>
@@ -231,10 +254,8 @@ function runCode(){
       </body>
     </html>
   `;
-
   const blob = new Blob([combinedCode], { type: 'text/html' });
   previewFrame.src = URL.createObjectURL(blob);
-
   previewScreen.classList.remove("hidden");
   previewScreen.classList.add("flex");
   logMsg("App compiled & running 🚀", "ok");
@@ -242,17 +263,12 @@ function runCode(){
 
 // ✨ DEPLOY BUTTON LOGIC ✨
 function deployCode() {
-  saveCode(); // Save first
+  saveCode(); 
   logMsg("Initiating Deployment Engine...", "warn");
-  
-  // Fake deployment delay for UX
+  setTimeout(() => { logMsg("Packaging HTML, CSS & JS...", "warn"); }, 800);
   setTimeout(() => {
-    logMsg("Packaging HTML, CSS & JS...", "warn");
-  }, 800);
-
-  setTimeout(() => {
-    logMsg("Deploy Successful! 🌍 URL will be generated soon.", "ok");
-    alert("Deploy process started! In the next phase, we will connect Vercel API to generate a real public link for this project.");
+    logMsg("Deploy Successful! 🌍 URL generation pending API connect.", "ok");
+    alert("Deploy process started! Next step is connecting Vercel API.");
   }, 2000);
 }
 
@@ -282,7 +298,6 @@ function updateOverlay() {
 document.getElementById("askAiBtn").onclick = () => {
   const q = document.getElementById("aiPrompt").value.trim();
   if(!q) return logMsg("Ask a question first", "err");
-  
   const aiOutput = document.getElementById("aiOutput");
   aiOutput.innerHTML += `
     <div class="mt-4 border-t border-gray-700 pt-3">
@@ -303,8 +318,8 @@ function logMsg(msg, type) {
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
-// Initialize App
-loadWorkspace();
+// Boot up the IDE!
+bootApp();
 </script>
 
 </body>
