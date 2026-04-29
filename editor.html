@@ -103,7 +103,7 @@
     </div>
 
     <div class="p-4">
-      <button class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm transition-all hover:scale-[1.02]">
+      <button onclick="createNewProject()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm transition-all hover:scale-[1.02]">
         + New Project
       </button>
     </div>
@@ -228,6 +228,27 @@ function switchFile(type){
 function saveCode(){
   files[currentFile] = editor.value;
   logMsg("Changes saved to cloud successfully ✅", "ok");
+}
+
+// ✨ Create New Project Logic
+function createNewProject() {
+  const confirmNew = confirm("Start a new project? Unsaved changes will be lost.");
+  if(!confirmNew) return;
+
+  // Reset files to a fresh dark-theme template
+  files = {
+    html: "<div class='container'>\n  <h1>New Verion Project ✨</h1>\n  <p>Start typing your code...</p>\n</div>",
+    css: "body {\n  font-family: sans-serif;\n  background: #0b0f17;\n  color: white;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 100vh;\n  margin: 0;\n}\n.container {\n  background: #111827;\n  padding: 40px;\n  border-radius: 20px;\n  border: 1px solid #1f2937;\n  text-align: center;\n}\nh1 {\n  color: #4F7C82;\n  margin-top: 0;\n}",
+    js: "console.log('New Project Initialized!');"
+  };
+
+  currentFile = "html";
+  switchFile("html");
+  
+  closeAllPanels(); // MobileUX: Hide sidebar after clicking
+  
+  consoleBox.innerHTML = "";
+  logMsg("Workspace cleared. New project ready 🚀", "ok");
 }
 
 // ✨ THE MAGIC RUN BUTTON ✨
