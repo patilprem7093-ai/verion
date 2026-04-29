@@ -103,13 +103,13 @@
     </div>
 
     <div class="p-4">
-      <button class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm">
+      <button class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm transition-all hover:scale-[1.02]">
         + New Project
       </button>
     </div>
 
     <div class="px-4 pb-3">
-      <input placeholder="Search files..." class="w-full bg-[#1f2937] px-4 py-2 rounded-lg outline-none text-sm">
+      <input placeholder="Search files..." class="w-full bg-[#1f2937] px-4 py-2 rounded-lg outline-none text-sm focus:ring-1 ring-[#4F7C82]">
     </div>
 
     <div class="px-4 text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-wider">
@@ -125,60 +125,64 @@
 
   <main class="flex-1 flex flex-col min-w-0 h-full relative">
 
-    <header class="h-14 panel border-b flex items-center gap-2 px-3 shrink-0 overflow-x-auto no-scrollbar">
+    <header class="h-14 panel border-b flex items-center gap-3 px-4 shrink-0 overflow-x-auto no-scrollbar">
       
-      <div onclick="toggleExplorer()" class="logo-v md:hidden">V</div>
+      <div onclick="toggleExplorer()" class="logo-v md:hidden hover:scale-105 transition-transform">V</div>
 
-      <input id="smartSearch" class="searchbox hidden sm:block" placeholder="Search...">
+      <input id="smartSearch" class="searchbox hidden sm:block" placeholder="Search across files...">
 
-      <button onclick="toggleAI()" class="btn !bg-purple-600 !px-3 flex items-center gap-1">
-        <span>✨</span> AI
+      <button onclick="toggleAI()" class="btn !bg-purple-600 !px-4 flex items-center gap-2 hover:scale-105 transition-transform shadow-lg shadow-purple-500/20">
+        <span>✨</span> Ask AI
       </button>
 
-      <div class="flex-1"></div> <button onclick="saveCode()" class="btn !bg-gray-700 hover:!bg-gray-600">Save</button>
-      <button onclick="runCode()" class="btn !bg-green-600 hover:!bg-green-500">▶ Run</button>
-      <button class="btn hidden sm:block">Deploy</button>
+      <div class="flex-1"></div> <button onclick="saveCode()" class="btn !bg-gray-700 hover:!bg-gray-600 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> Save
+      </button>
+      <button onclick="runCode()" class="btn !bg-green-600 hover:!bg-green-500 flex items-center gap-2 shadow-lg shadow-green-500/20">
+        ▶ Run
+      </button>
+      <button class="btn hidden sm:block hover:scale-105 transition-transform">Deploy</button>
     </header>
 
     <div class="flex flex-1 min-h-0 relative">
 
       <section class="flex-1 flex flex-col min-w-0">
-        <div class="h-10 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 text-xs font-mono text-gray-300 shrink-0">
-          <span id="activeFile">index.html</span>
+        <div class="h-10 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 text-xs font-mono text-gray-300 shrink-0 shadow-sm">
+          <span id="activeFile" class="bg-[#1e293b] px-3 py-1 rounded-md text-white border border-gray-700">index.html</span>
         </div>
 
-        <textarea id="editor" class="flex-1 bg-[#0d1117] text-gray-100 p-4 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
+        <textarea id="editor" class="flex-1 bg-[#0d1117] text-gray-100 p-5 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
 
-        <div class="h-24 bg-black border-t border-gray-800 p-3 overflow-auto shrink-0">
-          <div id="console" class="console-ok text-xs font-mono">Console ready...</div>
+        <div class="h-32 bg-black border-t border-gray-800 p-4 overflow-auto shrink-0 shadow-inner">
+          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">System initialized...<br>Verion OS ready.</div>
         </div>
       </section>
 
       <div id="previewScreen" class="absolute inset-0 bg-white z-30 hidden flex-col transition-all">
         <div class="h-12 bg-gray-100 border-b flex items-center justify-between px-4 text-black shrink-0">
           <div class="font-bold text-sm flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-green-500"></span> Live Preview
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> Live Output
           </div>
-          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600">
-            Stop / Back to Code
+          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600 shadow-md">
+            Stop Execution
           </button>
         </div>
         <iframe id="previewFrame" class="flex-1 w-full h-full bg-white border-none"></iframe>
       </div>
 
-      <aside id="rightSidebar" class="absolute inset-y-0 right-0 z-50 w-80 panel border-l flex flex-col transform translate-x-full transition-transform duration-300 md:relative md:translate-x-full shadow-2xl">
+      <aside id="rightSidebar" class="absolute inset-y-0 right-0 z-50 w-80 panel border-l flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
         <div class="h-14 border-b border-gray-800 flex items-center justify-between px-4">
-          <span class="font-bold text-purple-400">✨ AI Assistant</span>
-          <button onclick="closeAllPanels()" class="text-gray-400 text-xl">&times;</button>
+          <span class="font-bold text-purple-400 flex items-center gap-2">✨ AI Assistant</span>
+          <button onclick="toggleAI()" class="text-gray-400 hover:text-white text-2xl px-2 transition-colors">&times;</button>
         </div>
 
-        <div class="p-4 border-b border-gray-800">
-          <textarea id="aiPrompt" class="w-full h-24 bg-[#1f2937] rounded-lg p-3 text-sm text-white focus:ring-2 ring-purple-500" placeholder="Ask AI anything..."></textarea>
-          <button id="askAiBtn" class="mt-2 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-lg text-sm font-bold">Ask AI</button>
+        <div class="p-4 border-b border-gray-800 bg-[#0f172a]/50">
+          <textarea id="aiPrompt" class="w-full h-24 bg-[#1f2937] rounded-lg p-3 text-sm text-white focus:ring-2 ring-purple-500 transition-all shadow-inner" placeholder="Ask AI to write code, find bugs..."></textarea>
+          <button id="askAiBtn" class="mt-3 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">Send to AI</button>
         </div>
 
         <div id="aiOutput" class="flex-1 overflow-auto p-4 text-xs leading-6 text-white space-y-3">
-          <p class="console-ai bg-purple-900/20 p-3 rounded-lg border border-purple-500/20">AI ready. Ask coding questions here.</p>
+          <p class="console-ai bg-purple-900/20 p-3 rounded-lg border border-purple-500/20">AI engine is online. Connect API keys to start generating code.</p>
         </div>
       </aside>
 
@@ -190,9 +194,9 @@
 <script>
 // File Management
 let files = {
-  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is running live!</p>\n</div>",
-  css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f4f8; }\n.box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
-  js: "console.log('Verion Preview Started!');"
+  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is running live on Desktop & Mobile!</p>\n</div>",
+  css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
+  js: "console.log('Verion Preview Started!');\n// Start coding here..."
 };
 
 let currentFile = "html";
@@ -218,12 +222,12 @@ function switchFile(type){
   if(type==="js") activeFile.innerText = "script.js";
 
   editor.value = files[type];
-  logMsg(activeFile.innerText + " opened ✅", "ok");
+  logMsg(activeFile.innerText + " loaded into memory ⚡", "ok");
 }
 
 function saveCode(){
   files[currentFile] = editor.value;
-  logMsg("Saved successfully ✅", "ok");
+  logMsg("Changes saved to cloud successfully ✅", "ok");
 }
 
 // ✨ THE MAGIC RUN BUTTON ✨
@@ -251,7 +255,7 @@ function runCode(){
   // Show Preview Screen
   previewScreen.classList.remove("hidden");
   previewScreen.classList.add("flex");
-  logMsg("App compiled & running 🚀", "ok");
+  logMsg("App compiled & running on Port 3000 🚀", "ok");
 }
 
 // Close Preview
@@ -259,7 +263,7 @@ function closePreview(){
   previewScreen.classList.add("hidden");
   previewScreen.classList.remove("flex");
   previewFrame.src = ""; // Stop execution
-  logMsg("Preview closed. Back to editor.", "warn");
+  logMsg("Preview stopped. Returned to Editor.", "warn");
 }
 
 // --- UI Toggle Logic ---
@@ -280,11 +284,13 @@ function closeAllPanels() {
 }
 
 function updateOverlay() {
-  // If either panel is open on mobile, show overlay
-  if (!leftSidebar.classList.contains("-translate-x-full") || !rightSidebar.classList.contains("translate-x-full")) {
-    mobileOverlay.classList.remove("hidden");
-  } else {
-    mobileOverlay.classList.add("hidden");
+  // Check if it's a mobile screen logic
+  if(window.innerWidth < 768) {
+    if (!leftSidebar.classList.contains("-translate-x-full") || !rightSidebar.classList.contains("translate-x-full")) {
+      mobileOverlay.classList.remove("hidden");
+    } else {
+      mobileOverlay.classList.add("hidden");
+    }
   }
 }
 
@@ -296,8 +302,10 @@ document.getElementById("askAiBtn").onclick = () => {
   const aiOutput = document.getElementById("aiOutput");
   aiOutput.innerHTML += `
     <div class="mt-4 border-t border-gray-700 pt-3">
-      <p class="text-gray-400 mb-1"><b>You:</b> ${q}</p>
-      <p class="text-green-400"><b>AI:</b> System is ready. Connect Gemini API to generate responses here.</p>
+      <p class="text-gray-400 mb-1 font-bold">You:</p>
+      <p class="text-sm text-gray-300">${q}</p>
+      <p class="text-green-400 font-bold mt-2">Verion AI:</p>
+      <p class="text-sm">I'm ready to write code for you! Connect my backend logic to start.</p>
     </div>
   `;
   document.getElementById("aiPrompt").value = "";
@@ -307,7 +315,8 @@ document.getElementById("askAiBtn").onclick = () => {
 // Simple Logger
 function logMsg(msg, type) {
   let colorClass = type === 'ok' ? 'console-ok' : type === 'err' ? 'console-err' : 'console-warn';
-  consoleBox.innerHTML = `<span class="${colorClass}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + consoleBox.innerHTML;
+  consoleBox.innerHTML += `<br><span class="${colorClass}">[${new Date().toLocaleTimeString()}] ${msg}</span>`;
+  consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
 // Init
