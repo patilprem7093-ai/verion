@@ -96,7 +96,7 @@
         <textarea id="editor" oninput="updateMemory()" class="flex-1 bg-[#0d1117] text-gray-100 p-5 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
 
         <div class="h-32 bg-black border-t border-gray-800 p-4 overflow-auto shrink-0 shadow-inner">
-          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">Connecting to Verion Cloud Server...</div>
+          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">System booting up...</div>
         </div>
       </section>
 
@@ -133,18 +133,25 @@
 // --- SUPABASE CONFIGURATION ---
 const SUPABASE_URL = "https://glxteylzcrqejaxnifiz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Safe Initialization to prevent crashes
+let supabase = null;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+  console.error("Supabase load failed");
+}
 
 let currentUser = null;
 
 // --- DEFAULT TEMPLATE ---
 const defaultFiles = {
-  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is now saved in the Cloud!</p>\n</div>",
+  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Ready to build!</p>\n</div>",
   css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
-  js: "console.log('Verion Connected to Supabase!');"
+  js: "console.log('Verion IDE Ready!');"
 };
 
-let files = {};
+let files = JSON.parse(JSON.stringify(defaultFiles));
 let currentFile = "html";
 
 // Elements
@@ -157,34 +164,52 @@ const leftSidebar = document.getElementById("leftSidebar");
 const rightSidebar = document.getElementById("rightSidebar");
 const mobileOverlay = document.getElementById("mobileOverlay");
 
-// --- BOOT PROCESS (Auth & Load Workspace) ---
+// --- SAFE BOOT PROCESS (Hybrid Mode) ---
 async function bootApp() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  
-  if (error || !session) {
-    alert("Authentication required. Please login first.");
-    window.location.href = "index.html"; // Agar user login nahi hai toh bahar fenk do
+  if (!supabase) {
+    logMsg("Guest Mode: Working locally.", "warn");
+    loadLocalFallback();
     return;
   }
-  
-  currentUser = session.user;
-  logMsg("User authenticated. Fetching Cloud Workspace...", "warn");
-  
-  // Database se code fetch karna
-  const { data, fetchError } = await supabase
-    .from('workspaces')
-    .select('files_data')
-    .eq('user_id', currentUser.id)
-    .single();
 
-  if (data && data.files_data) {
-    files = data.files_data;
-    logMsg("Cloud Workspace loaded successfully ☁️✅", "ok");
-  } else {
-    files = JSON.parse(JSON.stringify(defaultFiles));
-    logMsg("New workspace created.", "ok");
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error || !session) {
+      logMsg("Guest Mode: Not logged in. Code will save to browser only.", "warn");
+      loadLocalFallback();
+      return;
+    }
+    
+    currentUser = session.user;
+    logMsg("User authenticated. Fetching Cloud Workspace...", "warn");
+    
+    const { data } = await supabase
+      .from('workspaces')
+      .select('files_data')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (data && data.files_data) {
+      files = data.files_data;
+      logMsg("Cloud Workspace loaded successfully ☁️✅", "ok");
+    } else {
+      logMsg("New workspace created in Cloud.", "ok");
+    }
+  } catch (err) {
+    logMsg("Cloud error. Working locally.", "warn");
+    loadLocalFallback();
   }
   
+  switchFile("html"); // Update screen
+}
+
+// Local Fallback Logic
+function loadLocalFallback() {
+  const savedData = localStorage.getItem("verion_local_backup");
+  if (savedData) {
+    files = JSON.parse(savedData);
+  }
   switchFile("html");
 }
 
@@ -200,26 +225,33 @@ function switchFile(type){
   if(type==="html") activeFile.innerText = "index.html";
   if(type==="css") activeFile.innerText = "style.css";
   if(type==="js") activeFile.innerText = "script.js";
-  editor.value = files[type];
+  editor.value = files[type] || "";
 }
 
-// ✨ REAL CLOUD SAVE BUTTON (Supabase Upsert) ✨
+// ✨ BULLETPROOF SAVE BUTTON ✨
 async function saveCode(){
   updateMemory(); 
-  logMsg("Syncing changes to cloud...", "warn");
+  
+  // Always save locally (Machis ki dabbi) as backup
+  localStorage.setItem("verion_local_backup", JSON.stringify(files));
 
-  const { error } = await supabase
-    .from('workspaces')
-    .upsert({ 
-      user_id: currentUser.id, 
-      files_data: files,
-      updated_at: new Date()
-    });
+  if (currentUser && supabase) {
+    logMsg("Syncing changes to cloud...", "warn");
+    const { error } = await supabase
+      .from('workspaces')
+      .upsert({ 
+        user_id: currentUser.id, 
+        files_data: files,
+        updated_at: new Date()
+      });
 
-  if (error) {
-    logMsg("Cloud Save Failed: " + error.message, "err");
+    if (error) {
+      logMsg("Cloud Save Failed. Saved locally instead.", "err");
+    } else {
+      logMsg("Code saved securely to Supabase Cloud ☁️✅", "ok");
+    }
   } else {
-    logMsg("Code saved securely to Supabase Cloud ☁️✅", "ok");
+    logMsg("Code saved locally (Guest Mode) ✅", "ok");
   }
 }
 
@@ -228,12 +260,7 @@ function createNewProject() {
   const confirmNew = confirm("Start a new blank project? Unsaved changes will be lost.");
   if(!confirmNew) return;
 
-  files = {
-    html: "\n",
-    css: "/* Write your CSS here */\n",
-    js: "// Write your JavaScript here\n"
-  };
-
+  files = { html: "\n", css: "/* CSS */\n", js: "// JS\n" };
   currentFile = "html";
   switchFile("html");
   closeAllPanels(); 
@@ -268,7 +295,6 @@ function deployCode() {
   setTimeout(() => { logMsg("Packaging HTML, CSS & JS...", "warn"); }, 800);
   setTimeout(() => {
     logMsg("Deploy Successful! 🌍 URL generation pending API connect.", "ok");
-    alert("Deploy process started! Next step is connecting Vercel API.");
   }, 2000);
 }
 
