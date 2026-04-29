@@ -2,244 +2,215 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#111827" />
   <title>Verion IDE</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     *{
-      box-sizing:border-box;
-      margin:0;
-      padding:0;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    html,body{
-      width:100%;
-      height:100%;
-      overflow:hidden;
-      font-family:Inter,system-ui,sans-serif;
-      background:#0b0f17;
-      color:white;
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Inter, system-ui, sans-serif;
+      background: #0b0f17;
+      color: white;
     }
 
-    textarea{
-      resize:none;
-      outline:none;
-      border:none;
+    textarea {
+      resize: none;
+      outline: none;
+      border: none;
     }
 
-    .btn{
-      background:#4F7C82;
-      padding:10px 18px;
-      border-radius:10px;
-      font-size:14px;
-      transition:.2s;
+    /* Custom Scrollbar for sleek look */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+
+    .btn {
+      background: #4F7C82;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: .2s;
     }
 
-    .btn:hover{
-      filter:brightness(1.12);
+    .btn:hover { filter: brightness(1.12); }
+
+    .panel {
+      background: #111827;
+      border-color: #1f2937;
     }
 
-    .panel{
-      background:#111827;
-      border:1px solid #1f2937;
+    .searchbox {
+      flex: 1;
+      background: #1f2937;
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 8px;
+      outline: none;
+      font-size: 13px;
+      min-width: 120px;
     }
 
-    .chip{
-      background:white;
-      color:black;
-      padding:8px 16px;
-      border-radius:999px;
-      font-weight:700;
-      cursor:pointer;
-      transition:.2s;
-    }
+    .console-ok { color: #22c55e; }
+    .console-warn { color: #eab308; }
+    .console-err { color: #ef4444; }
+    .console-ai { color: #8b5cf6; }
 
-    .chip:hover{
-      transform:scale(1.03);
-    }
-
-    .searchbox{
-      flex:1;
-      background:#1f2937;
-      border:none;
-      color:white;
-      padding:12px 18px;
-      border-radius:12px;
-      outline:none;
-      font-size:14px;
-      min-width:220px;
-    }
-
-    .console-ok{ color:#22c55e; }
-    .console-warn{ color:#eab308; }
-    .console-err{ color:#ef4444; }
-    .console-ai{ color:#8b5cf6; }
-
-    .logo-v{
-      display:inline-flex;
-      width:34px;
-      height:34px;
-      border-radius:10px;
-      background:#4F7C82;
-      align-items:center;
-      justify-content:center;
-      font-weight:800;
-      margin-right:10px;
+    .logo-v {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #4F7C82;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      cursor: pointer;
+      flex-shrink: 0;
     }
   </style>
 </head>
 
 <body>
 
-<div class="flex h-screen">
+<div class="flex h-screen relative overflow-hidden">
 
-  <!-- LEFT SIDEBAR -->
-  <aside class="w-72 panel border-r flex flex-col">
+  <div id="mobileOverlay" onclick="closeAllPanels()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
 
-    <div class="p-5 border-b border-gray-800 flex items-center">
-      <span class="logo-v">V</span>
-      <div>
-        <h1 class="text-xl font-bold">VERION</h1>
-        <p class="text-xs text-gray-400 mt-1">Professional Cloud IDE</p>
+  <aside id="leftSidebar" class="absolute inset-y-0 left-0 z-50 w-72 panel border-r flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+    <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="logo-v">V</span>
+        <div>
+          <h1 class="text-xl font-bold">VERION</h1>
+          <p class="text-[10px] text-gray-400 mt-0.5">Professional Cloud IDE</p>
+        </div>
       </div>
+      <button onclick="closeAllPanels()" class="md:hidden text-gray-400 text-xl px-2">&times;</button>
     </div>
 
     <div class="p-4">
-      <button class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-medium">
+      <button class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm">
         + New Project
       </button>
     </div>
 
     <div class="px-4 pb-3">
-      <input
-        placeholder="Search files..."
-        class="w-full bg-[#1f2937] px-4 py-3 rounded-xl outline-none text-sm"
-      >
+      <input placeholder="Search files..." class="w-full bg-[#1f2937] px-4 py-2 rounded-lg outline-none text-sm">
     </div>
 
-    <div class="px-4 text-xs text-gray-500 uppercase mb-2">
+    <div class="px-4 text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-wider">
       Explorer
     </div>
 
     <div class="px-2 space-y-1">
-      <button onclick="switchFile('html')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">📄 index.html</button>
-      <button onclick="switchFile('css')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">🎨 style.css</button>
-      <button onclick="switchFile('js')" class="w-full text-left px-4 py-3 rounded-lg hover:bg-[#1f2937]">⚙ script.js</button>
+      <button onclick="switchFile('html'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">📄 index.html</button>
+      <button onclick="switchFile('css'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">🎨 style.css</button>
+      <button onclick="switchFile('js'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">⚙ script.js</button>
     </div>
-
   </aside>
 
-  <!-- MAIN -->
-  <main class="flex-1 flex flex-col min-w-0">
+  <main class="flex-1 flex flex-col min-w-0 h-full relative">
 
-    <!-- TOPBAR -->
-    <header class="h-16 panel border-b flex items-center gap-3 px-5 shrink-0">
+    <header class="h-14 panel border-b flex items-center gap-2 px-3 shrink-0 overflow-x-auto no-scrollbar">
+      
+      <div onclick="toggleExplorer()" class="logo-v md:hidden">V</div>
 
-      <div class="flex items-center font-bold text-lg shrink-0">
-        <span class="logo-v">V</span>
-        VERION
-      </div>
+      <input id="smartSearch" class="searchbox hidden sm:block" placeholder="Search...">
 
-      <input
-        id="smartSearch"
-        class="searchbox"
-        placeholder="Search bar"
-      >
-
-      <button id="aiFocusBtn" class="chip shrink-0">
-        AI
+      <button onclick="toggleAI()" class="btn !bg-purple-600 !px-3 flex items-center gap-1">
+        <span>✨</span> AI
       </button>
 
-      <button class="btn">Preview</button>
-      <button onclick="saveCode()" class="btn">Save</button>
-      <button onclick="runCode()" class="btn">Run</button>
-      <button class="btn">Deploy</button>
-
+      <div class="flex-1"></div> <button onclick="saveCode()" class="btn !bg-gray-700 hover:!bg-gray-600">Save</button>
+      <button onclick="runCode()" class="btn !bg-green-600 hover:!bg-green-500">▶ Run</button>
+      <button class="btn hidden sm:block">Deploy</button>
     </header>
-        <!-- WORKSPACE -->
-    <div class="flex flex-1 min-h-0">
 
-      <!-- CENTER EDITOR -->
-      <section class="flex-1 flex flex-col border-r border-gray-800 min-w-0">
+    <div class="flex flex-1 min-h-0 relative">
 
-        <!-- FILE TAB -->
-        <div class="h-12 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 text-sm text-gray-300 shrink-0">
+      <section class="flex-1 flex flex-col min-w-0">
+        <div class="h-10 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 text-xs font-mono text-gray-300 shrink-0">
           <span id="activeFile">index.html</span>
         </div>
 
-        <!-- CODE AREA -->
-        <textarea
-          id="editor"
-          class="flex-1 bg-[#0d1117] text-white p-5 text-sm font-mono leading-7"
-          spellcheck="false"
-        ></textarea>
+        <textarea id="editor" class="flex-1 bg-[#0d1117] text-gray-100 p-4 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
 
-        <!-- CONSOLE -->
-        <div class="h-32 bg-black border-t border-gray-800 p-4 overflow-auto shrink-0">
-          <div id="console" class="console-ok text-sm">
-            Console ready...
-          </div>
+        <div class="h-24 bg-black border-t border-gray-800 p-3 overflow-auto shrink-0">
+          <div id="console" class="console-ok text-xs font-mono">Console ready...</div>
         </div>
-
       </section>
 
-      <!-- RIGHT AI SIDEBAR -->
-      <aside class="w-[420px] panel flex flex-col shrink-0">
+      <div id="previewScreen" class="absolute inset-0 bg-white z-30 hidden flex-col transition-all">
+        <div class="h-12 bg-gray-100 border-b flex items-center justify-between px-4 text-black shrink-0">
+          <div class="font-bold text-sm flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-green-500"></span> Live Preview
+          </div>
+          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600">
+            Stop / Back to Code
+          </button>
+        </div>
+        <iframe id="previewFrame" class="flex-1 w-full h-full bg-white border-none"></iframe>
+      </div>
 
-        <div class="h-14 border-b border-gray-800 flex items-center px-4 font-semibold">
-          AI Assistant
+      <aside id="rightSidebar" class="absolute inset-y-0 right-0 z-50 w-80 panel border-l flex flex-col transform translate-x-full transition-transform duration-300 md:relative md:translate-x-full shadow-2xl">
+        <div class="h-14 border-b border-gray-800 flex items-center justify-between px-4">
+          <span class="font-bold text-purple-400">✨ AI Assistant</span>
+          <button onclick="closeAllPanels()" class="text-gray-400 text-xl">&times;</button>
         </div>
 
         <div class="p-4 border-b border-gray-800">
-          <textarea
-            id="aiPrompt"
-            class="w-full h-28 bg-[#1f2937] rounded-xl p-4 text-sm text-white"
-            placeholder="Ask AI anything..."
-          ></textarea>
-
-          <button
-            id="askAiBtn"
-            class="mt-3 w-full bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-medium"
-          >
-            Ask AI
-          </button>
+          <textarea id="aiPrompt" class="w-full h-24 bg-[#1f2937] rounded-lg p-3 text-sm text-white focus:ring-2 ring-purple-500" placeholder="Ask AI anything..."></textarea>
+          <button id="askAiBtn" class="mt-2 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-lg text-sm font-bold">Ask AI</button>
         </div>
 
-        <div
-          id="aiOutput"
-          class="flex-1 overflow-auto p-4 text-sm leading-7 text-white"
-        >
-          <p class="console-ai">
-            AI ready. Ask coding questions here.
-          </p>
+        <div id="aiOutput" class="flex-1 overflow-auto p-4 text-xs leading-6 text-white space-y-3">
+          <p class="console-ai bg-purple-900/20 p-3 rounded-lg border border-purple-500/20">AI ready. Ask coding questions here.</p>
         </div>
-
       </aside>
 
     </div>
-
   </main>
 
 </div>
+
 <script>
+// File Management
 let files = {
-  html: "<h1>Hello Verion 🚀</h1>",
-  css: "body{font-family:sans-serif;padding:20px;} h1{color:blue;}",
-  js: "console.log('Verion Ready');"
+  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Your code is running live!</p>\n</div>",
+  css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f4f8; }\n.box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
+  js: "console.log('Verion Preview Started!');"
 };
 
 let currentFile = "html";
 
+// Elements
 const editor = document.getElementById("editor");
 const activeFile = document.getElementById("activeFile");
 const consoleBox = document.getElementById("console");
-const aiPrompt = document.getElementById("aiPrompt");
-const aiOutput = document.getElementById("aiOutput");
+const previewScreen = document.getElementById("previewScreen");
+const previewFrame = document.getElementById("previewFrame");
 
+const leftSidebar = document.getElementById("leftSidebar");
+const rightSidebar = document.getElementById("rightSidebar");
+const mobileOverlay = document.getElementById("mobileOverlay");
+
+// Switch Files
 function switchFile(type){
-  files[currentFile] = editor.value;
+  files[currentFile] = editor.value; // Save current before switching
   currentFile = type;
 
   if(type==="html") activeFile.innerText = "index.html";
@@ -247,59 +218,101 @@ function switchFile(type){
   if(type==="js") activeFile.innerText = "script.js";
 
   editor.value = files[type];
-  consoleBox.className = "console-ok text-sm";
-  consoleBox.innerText = activeFile.innerText + " opened ✅";
+  logMsg(activeFile.innerText + " opened ✅", "ok");
 }
 
 function saveCode(){
   files[currentFile] = editor.value;
-  consoleBox.className = "console-ok text-sm";
-  consoleBox.innerText = "Saved successfully ✅";
+  logMsg("Saved successfully ✅", "ok");
 }
 
+// ✨ THE MAGIC RUN BUTTON ✨
 function runCode(){
-  files[currentFile] = editor.value;
-  consoleBox.className = "console-ok text-sm";
-  consoleBox.innerText = "App compiled successfully 🚀";
+  saveCode(); // Auto save before run
+  
+  // Combine HTML, CSS, and JS
+  const combinedCode = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>${files.css}</style>
+      </head>
+      <body>
+        ${files.html}
+        <script>${files.js}<\/script>
+      </body>
+    </html>
+  `;
+
+  // Put combined code into iframe
+  const blob = new Blob([combinedCode], { type: 'text/html' });
+  previewFrame.src = URL.createObjectURL(blob);
+
+  // Show Preview Screen
+  previewScreen.classList.remove("hidden");
+  previewScreen.classList.add("flex");
+  logMsg("App compiled & running 🚀", "ok");
 }
 
-document.getElementById("aiFocusBtn").onclick = () => {
-  aiPrompt.focus();
-};
+// Close Preview
+function closePreview(){
+  previewScreen.classList.add("hidden");
+  previewScreen.classList.remove("flex");
+  previewFrame.src = ""; // Stop execution
+  logMsg("Preview closed. Back to editor.", "warn");
+}
 
+// --- UI Toggle Logic ---
+function toggleExplorer() {
+  leftSidebar.classList.toggle("-translate-x-full");
+  updateOverlay();
+}
+
+function toggleAI() {
+  rightSidebar.classList.toggle("translate-x-full");
+  updateOverlay();
+}
+
+function closeAllPanels() {
+  leftSidebar.classList.add("-translate-x-full");
+  rightSidebar.classList.add("translate-x-full");
+  updateOverlay();
+}
+
+function updateOverlay() {
+  // If either panel is open on mobile, show overlay
+  if (!leftSidebar.classList.contains("-translate-x-full") || !rightSidebar.classList.contains("translate-x-full")) {
+    mobileOverlay.classList.remove("hidden");
+  } else {
+    mobileOverlay.classList.add("hidden");
+  }
+}
+
+// AI Mock Logic
 document.getElementById("askAiBtn").onclick = () => {
-  const q = aiPrompt.value.trim();
-
-  if(!q){
-    aiOutput.innerHTML =
-      '<p class="console-warn">Write a question first.</p>';
-    return;
-  }
-
-  aiOutput.innerHTML = `
-    <p class="console-ai mb-3"><b>AI:</b> I found your request.</p>
-    <p class="text-white">Question:</p>
-    <p class="text-yellow-400 mt-1">${q}</p>
-    <p class="text-green-400 mt-4">Suggestion:</p>
-    <p class="mt-1">Feature is ready for Gemini API connection.</p>
+  const q = document.getElementById("aiPrompt").value.trim();
+  if(!q) return logMsg("Ask a question first", "err");
+  
+  const aiOutput = document.getElementById("aiOutput");
+  aiOutput.innerHTML += `
+    <div class="mt-4 border-t border-gray-700 pt-3">
+      <p class="text-gray-400 mb-1"><b>You:</b> ${q}</p>
+      <p class="text-green-400"><b>AI:</b> System is ready. Connect Gemini API to generate responses here.</p>
+    </div>
   `;
+  document.getElementById("aiPrompt").value = "";
+  aiOutput.scrollTop = aiOutput.scrollHeight;
 };
 
-document.getElementById("smartSearch").addEventListener("input",(e)=>{
-  const value = e.target.value.toLowerCase();
+// Simple Logger
+function logMsg(msg, type) {
+  let colorClass = type === 'ok' ? 'console-ok' : type === 'err' ? 'console-err' : 'console-warn';
+  consoleBox.innerHTML = `<span class="${colorClass}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + consoleBox.innerHTML;
+}
 
-  if(
-    files[currentFile]
-    .toLowerCase()
-    .includes(value)
-  ){
-    consoleBox.className = "console-ai text-sm";
-    consoleBox.innerText = "Match found in code 🔍";
-  }
-});
-
+// Init
 switchFile("html");
 </script>
 
 </body>
-</html> 
+</html>
