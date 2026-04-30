@@ -1,351 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#111827" />
-  <title>Verion IDE</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#111827" />
+<title>Verion IDE Pro</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    *{ box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; font-family: Inter, system-ui, sans-serif; background: #0b0f17; color: white; }
-    textarea { resize: none; outline: none; border: none; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
-    .btn { background: #4F7C82; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; transition: .2s; }
-    .btn:hover { filter: brightness(1.12); }
-    .panel { background: #111827; border-color: #1f2937; }
-    .searchbox { flex: 1; background: #1f2937; border: none; color: white; padding: 8px 14px; border-radius: 8px; outline: none; font-size: 13px; min-width: 120px; }
-    .console-ok { color: #22c55e; }
-    .console-warn { color: #eab308; }
-    .console-err { color: #ef4444; }
-    .console-ai { color: #8b5cf6; }
-    .logo-v { display: inline-flex; width: 32px; height: 32px; border-radius: 8px; background: #4F7C82; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; flex-shrink: 0; }
-  </style>
+<style>
+:root {
+  --bg: #0b0f17;
+  --panel: #111827;
+  --border: #1f2937;
+  --accent: #4F7C82;
+}
+
+body {
+  background: var(--bg);
+  color: #fff;
+  font-family: Inter, system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+textarea {
+  width: 100%;
+  height: 100%;
+  background: #0d1117;
+  color: #fff;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 16px;
+  font-family: monospace;
+}
+
+.console {
+  background: #000;
+  font-size: 12px;
+  height: 120px;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+</style>
 </head>
 
 <body>
 
 <div class="flex h-screen relative overflow-hidden">
 
-  <div id="mobileOverlay" onclick="closeAllPanels()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
+  <div id="mobileOverlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
 
-  <aside id="leftSidebar" class="absolute inset-y-0 left-0 z-50 w-72 panel border-r flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+  <aside id="sidebar" class="absolute inset-y-0 left-0 z-50 w-64 panel border-r flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-2xl md:shadow-none">
+    
     <div class="p-4 border-b border-gray-800 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="logo-v">V</span>
-        <div>
-          <h1 class="text-xl font-bold">VERION</h1>
-          <p class="text-[10px] text-gray-400 mt-0.5">Professional Cloud IDE</p>
-        </div>
+        <div class="w-8 h-8 flex items-center justify-center bg-[#4F7C82] rounded font-bold text-lg">V</div>
+        <h1 class="font-bold tracking-wider text-sm">VERION PRO</h1>
       </div>
-      <button onclick="closeAllPanels()" class="md:hidden text-gray-400 text-xl px-2">&times;</button>
+      <button id="closeSidebarBtn" class="md:hidden text-gray-400 text-2xl px-2 hover:text-white">&times;</button>
     </div>
 
     <div class="p-4">
-      <button onclick="createNewProject()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg font-medium text-sm transition-all hover:scale-[1.02]">
-        + New Project
-      </button>
+      <button id="newBtn" class="w-full bg-[#4F7C82] hover:brightness-110 py-2.5 rounded-lg font-bold text-sm shadow-lg transition-all active:scale-95">+ New Project</button>
     </div>
 
-    <div class="px-4 pb-3">
-      <input placeholder="Search files..." class="w-full bg-[#1f2937] px-4 py-2 rounded-lg outline-none text-sm focus:ring-1 ring-[#4F7C82]">
-    </div>
+    <div class="p-3 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2 mx-2">Explorer</div>
 
-    <div class="px-4 text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-wider">
-      Explorer
-    </div>
-
-    <div class="px-2 space-y-1">
-      <button onclick="switchFile('html'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">📄 index.html</button>
-      <button onclick="switchFile('css'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">🎨 style.css</button>
-      <button onclick="switchFile('js'); closeAllPanels();" class="w-full text-left px-4 py-2.5 rounded-lg hover:bg-[#1f2937] text-sm">⚙ script.js</button>
+    <div class="flex flex-col px-2 gap-1 mt-2">
+      <button data-file="html" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">📄 index.html</button>
+      <button data-file="css" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">🎨 style.css</button>
+      <button data-file="js" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">⚙ script.js</button>
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col min-w-0 h-full relative">
+  <main class="flex-1 flex flex-col min-w-0 relative">
 
-    <header class="h-14 panel border-b flex items-center gap-3 px-4 shrink-0 overflow-x-auto no-scrollbar">
-      <div onclick="toggleExplorer()" class="logo-v md:hidden hover:scale-105 transition-transform">V</div>
-      <input id="smartSearch" class="searchbox hidden sm:block" placeholder="Search across files...">
-      <button onclick="toggleAI()" class="btn !bg-purple-600 !px-4 flex items-center gap-2 hover:scale-105 transition-transform shadow-lg shadow-purple-500/20">
-        <span>✨</span> Ask AI
-      </button>
+    <header class="flex items-center gap-3 p-3 panel border-b shrink-0 z-10">
+      
+      <button id="toggleBtn" class="w-8 h-8 flex items-center justify-center bg-[#4F7C82] rounded cursor-pointer md:hidden font-bold active:scale-95 transition-transform">V</button>
 
-      <div class="flex-1"></div> 
-      <button onclick="saveCode()" class="btn !bg-gray-700 hover:!bg-gray-600 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> Save
-      </button>
-      <button onclick="runCode()" class="btn !bg-green-600 hover:!bg-green-500 flex items-center gap-2 shadow-lg shadow-green-500/20">
-        ▶ Run
-      </button>
-      <button onclick="deployCode()" class="btn hidden sm:block hover:scale-105 transition-transform !bg-blue-600">Deploy</button>
+      <input id="search" placeholder="Search in code..." class="hidden sm:block bg-gray-800 px-4 py-1.5 rounded-lg w-60 text-sm outline-none focus:ring-1 ring-[#4F7C82]">
+
+      <div class="flex-1"></div>
+
+      <button id="saveBtn" class="bg-gray-700 hover:bg-gray-600 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors">Save</button>
+      <button id="runBtn" class="bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-green-600/20 transition-colors">▶ Run</button>
+
     </header>
 
     <div class="flex flex-1 min-h-0 relative">
 
-      <section class="flex-1 flex flex-col min-w-0">
-        <div class="h-10 bg-[#0f172a] border-b border-gray-800 flex items-center px-4 text-xs font-mono text-gray-300 shrink-0 shadow-sm">
-          <span id="activeFile" class="bg-[#1e293b] px-3 py-1 rounded-md text-white border border-gray-700">index.html</span>
+      <div class="flex flex-col w-full md:w-1/2 border-r border-gray-800 min-w-0">
+        <div class="h-10 px-4 bg-gray-900 border-b border-gray-800 flex items-center shrink-0">
+          <span id="fileName" class="text-xs font-mono bg-gray-800 px-3 py-1 rounded text-gray-300 border border-gray-700">index.html</span>
         </div>
-
-        <textarea id="editor" oninput="updateMemory()" class="flex-1 bg-[#0d1117] text-gray-100 p-5 text-sm font-mono leading-relaxed" spellcheck="false"></textarea>
-
-        <div class="h-32 bg-black border-t border-gray-800 p-4 overflow-auto shrink-0 shadow-inner">
-          <div id="console" class="console-ok text-xs font-mono tracking-wide leading-relaxed">System booting up...</div>
-        </div>
-      </section>
-
-      <div id="previewScreen" class="absolute inset-0 bg-white z-30 hidden flex-col transition-all">
-        <div class="h-12 bg-gray-100 border-b flex items-center justify-between px-4 text-black shrink-0">
-          <div class="font-bold text-sm flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> Live Output
-          </div>
-          <button onclick="closePreview()" class="bg-red-500 text-white px-4 py-1.5 rounded-md text-xs font-bold hover:bg-red-600 shadow-md">Stop Execution</button>
-        </div>
-        <iframe id="previewFrame" class="flex-1 w-full h-full bg-white border-none"></iframe>
+        <textarea id="editor" spellcheck="false" class="leading-relaxed"></textarea>
+        <div id="console" class="console border-t border-gray-800 shadow-inner"></div>
       </div>
 
-      <aside id="rightSidebar" class="absolute inset-y-0 right-0 z-50 w-80 panel border-l flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-        <div class="h-14 border-b border-gray-800 flex items-center justify-between px-4">
-          <span class="font-bold text-purple-400 flex items-center gap-2">✨ AI Assistant</span>
-          <button onclick="toggleAI()" class="text-gray-400 hover:text-white text-2xl px-2 transition-colors">&times;</button>
+      <div id="previewContainer" class="absolute inset-0 z-30 bg-white hidden flex-col md:relative md:flex md:w-1/2">
+        <div class="h-12 bg-gray-100 border-b flex items-center justify-between px-4 text-black shrink-0 md:hidden">
+          <div class="font-bold text-sm flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> Live Preview
+          </div>
+          <button id="closePreviewBtn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">Close Preview</button>
         </div>
-        <div class="p-4 border-b border-gray-800 bg-[#0f172a]/50">
-          <textarea id="aiPrompt" class="w-full h-24 bg-[#1f2937] rounded-lg p-3 text-sm text-white focus:ring-2 ring-purple-500 transition-all shadow-inner" placeholder="Ask AI to write code, find bugs..."></textarea>
-          <button id="askAiBtn" class="mt-3 w-full bg-purple-600 hover:bg-purple-500 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">Send to AI</button>
-        </div>
-        <div id="aiOutput" class="flex-1 overflow-auto p-4 text-xs leading-6 text-white space-y-3">
-          <p class="console-ai bg-purple-900/20 p-3 rounded-lg border border-purple-500/20">AI engine is online. Connect API keys to start generating code.</p>
-        </div>
-      </aside>
+        <iframe id="preview" class="flex-1 w-full h-full bg-white border-none"></iframe>
+      </div>
 
     </div>
-  </main>
 
+  </main>
 </div>
 
 <script>
-// --- SUPABASE CONFIGURATION ---
-const SUPABASE_URL = "https://glxteylzcrqejaxnifiz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdseHRleWx6Y3JxZWpheG5pZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzAyOTksImV4cCI6MjA5MjQ0NjI5OX0.h4BurdPEYqTCST6V1d_wnMappJ11KA9uzXzcXFxyyHE";
+class VerionIDE {
 
-// Safe Initialization to prevent crashes
-let supabase = null;
-try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch (e) {
-  console.error("Supabase load failed");
-}
+  constructor(){
+    // DOM Elements
+    this.editor = document.getElementById("editor");
+    this.console = document.getElementById("console");
+    this.preview = document.getElementById("preview");
+    this.fileName = document.getElementById("fileName");
+    this.sidebar = document.getElementById("sidebar");
+    this.mobileOverlay = document.getElementById("mobileOverlay");
+    this.previewContainer = document.getElementById("previewContainer");
 
-let currentUser = null;
+    this.currentFile = "html";
 
-// --- DEFAULT TEMPLATE ---
-const defaultFiles = {
-  html: "<div class='box'>\n  <h1>Hello Verion 🚀</h1>\n  <p>Ready to build!</p>\n</div>",
-  css: "body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
-  js: "console.log('Verion IDE Ready!');"
-};
+    // Default Code
+    this.files = {
+      html:"<div class='box'>\n  <h1>Verion PRO 🚀</h1>\n  <p>Fully Responsive + Auto Save!</p>\n</div>",
+      css:"body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
+      js:"console.log('Mobile & Desktop Ready!');"
+    };
 
-let files = JSON.parse(JSON.stringify(defaultFiles));
-let currentFile = "html";
-
-// Elements
-const editor = document.getElementById("editor");
-const activeFile = document.getElementById("activeFile");
-const consoleBox = document.getElementById("console");
-const previewScreen = document.getElementById("previewScreen");
-const previewFrame = document.getElementById("previewFrame");
-const leftSidebar = document.getElementById("leftSidebar");
-const rightSidebar = document.getElementById("rightSidebar");
-const mobileOverlay = document.getElementById("mobileOverlay");
-
-// --- SAFE BOOT PROCESS (Hybrid Mode) ---
-async function bootApp() {
-  if (!supabase) {
-    logMsg("Guest Mode: Working locally.", "warn");
-    loadLocalFallback();
-    return;
+    this.init();
   }
 
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+  init(){
+    this.bindUI();
+    this.load();
+    this.switchFile("html");
+    this.log("IDE Boot Sequence Complete ⚡");
+  }
+
+  bindUI(){
+    // File switching
+    document.querySelectorAll(".fileBtn").forEach(btn=>{
+      btn.onclick = () => {
+        this.switchFile(btn.dataset.file);
+        if(window.innerWidth < 768) this.toggleSidebar(); // Close sidebar on mobile after select
+      };
+    });
+
+    // Buttons
+    document.getElementById("runBtn").onclick = () => this.run();
+    document.getElementById("saveBtn").onclick = () => this.save();
+    document.getElementById("newBtn").onclick = () => this.newProject();
     
-    if (error || !session) {
-      logMsg("Guest Mode: Not logged in. Code will save to browser only.", "warn");
-      loadLocalFallback();
-      return;
-    }
+    // Sidebar Toggles
+    document.getElementById("toggleBtn").onclick = () => this.toggleSidebar();
+    document.getElementById("closeSidebarBtn").onclick = () => this.toggleSidebar();
+    this.mobileOverlay.onclick = () => this.toggleSidebar();
+
+    // Mobile Preview Toggle
+    document.getElementById("closePreviewBtn").onclick = () => this.closePreview();
+
+    // Search
+    const searchInput = document.getElementById("search");
+    if(searchInput) searchInput.oninput = (e) => this.search(e.target.value);
+
+    // Keyboard Shortcuts
+    document.addEventListener("keydown",(e)=>{
+      if(e.ctrlKey && e.key==="s"){
+        e.preventDefault();
+        this.save();
+      }
+      if(e.ctrlKey && e.key==="Enter"){
+        this.run();
+      }
+    });
+
+    // Auto-save logic
+    this.editor.addEventListener("input", ()=>{
+      clearTimeout(this.autoTimer);
+      this.autoTimer = setTimeout(()=>this.save(), 800);
+    });
+  }
+
+  log(msg, type="ok"){
+    const line = document.createElement("div");
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    line.style.color = type==="err" ? "#ef4444" : type==="warn" ? "#eab308" : "#22c55e";
+    line.style.marginBottom = "4px";
     
-    currentUser = session.user;
-    logMsg("User authenticated. Fetching Cloud Workspace...", "warn");
-    
-    const { data } = await supabase
-      .from('workspaces')
-      .select('files_data')
-      .eq('user_id', currentUser.id)
-      .single();
+    this.console.appendChild(line);
+    this.console.scrollTop = this.console.scrollHeight;
+  }
 
-    if (data && data.files_data) {
-      files = data.files_data;
-      logMsg("Cloud Workspace loaded successfully ☁️✅", "ok");
-    } else {
-      logMsg("New workspace created in Cloud.", "ok");
+  switchFile(type){
+    this.files[this.currentFile] = this.editor.value;
+    this.currentFile = type;
+
+    this.fileName.textContent = type==="html" ? "index.html" : type==="css" ? "style.css" : "script.js";
+    this.editor.value = this.files[type];
+    this.log(this.fileName.textContent + " loaded");
+  }
+
+  save(){
+    this.files[this.currentFile] = this.editor.value;
+    try{
+      localStorage.setItem("verion_pro", JSON.stringify(this.files));
+      this.log("Auto-Saved securely ✅");
+    }catch(e){
+      this.log("Save failed", "err");
     }
-  } catch (err) {
-    logMsg("Cloud error. Working locally.", "warn");
-    loadLocalFallback();
   }
-  
-  switchFile("html"); // Update screen
-}
 
-// Local Fallback Logic
-function loadLocalFallback() {
-  const savedData = localStorage.getItem("verion_local_backup");
-  if (savedData) {
-    files = JSON.parse(savedData);
+  load(){
+    try{
+      const data = JSON.parse(localStorage.getItem("verion_pro"));
+      if(data && data.html !== undefined && data.css !== undefined && data.js !== undefined){
+        this.files = data;
+      }
+    }catch(e){}
   }
-  switchFile("html");
-}
 
-// Update memory while typing
-function updateMemory() {
-  files[currentFile] = editor.value;
-}
+  run(){
+    this.save();
 
-// Switch Files
-function switchFile(type){
-  updateMemory(); 
-  currentFile = type;
-  if(type==="html") activeFile.innerText = "index.html";
-  if(type==="css") activeFile.innerText = "style.css";
-  if(type==="js") activeFile.innerText = "script.js";
-  editor.value = files[type] || "";
-}
-
-// ✨ BULLETPROOF SAVE BUTTON ✨
-async function saveCode(){
-  updateMemory(); 
-  
-  // Always save locally (Machis ki dabbi) as backup
-  localStorage.setItem("verion_local_backup", JSON.stringify(files));
-
-  if (currentUser && supabase) {
-    logMsg("Syncing changes to cloud...", "warn");
-    const { error } = await supabase
-      .from('workspaces')
-      .upsert({ 
-        user_id: currentUser.id, 
-        files_data: files,
-        updated_at: new Date()
-      });
-
-    if (error) {
-      logMsg("Cloud Save Failed. Saved locally instead.", "err");
-    } else {
-      logMsg("Code saved securely to Supabase Cloud ☁️✅", "ok");
+    // Show preview container on mobile
+    if(window.innerWidth < 768) {
+      this.previewContainer.classList.remove("hidden");
+      this.previewContainer.classList.add("flex");
     }
-  } else {
-    logMsg("Code saved locally (Guest Mode) ✅", "ok");
+
+    const doc = this.preview.contentDocument;
+    doc.open();
+
+    const code = `
+<!DOCTYPE html>
+<html>
+<head>
+<style>${this.files.css}</style>
+</head>
+<body>
+${this.files.html}
+<script>
+try{
+${this.files.js}
+}catch(e){
+  document.body.innerHTML += "<pre style='color:red; background:#ffe6e6; padding:10px; border-radius:5px; font-family:monospace;'>Error: "+e.message+"</pre>";
+}
+<\/script>
+</body>
+</html>`;
+
+    doc.write(code);
+    doc.close();
+
+    this.log("Compiled & Running 🚀");
   }
-}
 
-// ✨ Create New Project Logic
-function createNewProject() {
-  const confirmNew = confirm("Start a new blank project? Unsaved changes will be lost.");
-  if(!confirmNew) return;
+  closePreview() {
+    this.previewContainer.classList.add("hidden");
+    this.previewContainer.classList.remove("flex");
+    this.log("Preview closed", "warn");
+  }
 
-  files = { html: "\n", css: "/* CSS */\n", js: "// JS\n" };
-  currentFile = "html";
-  switchFile("html");
-  closeAllPanels(); 
-  consoleBox.innerHTML = "";
-  logMsg("Workspace cleared. Blank project ready 🚀", "ok");
-}
+  newProject(){
+    if(!confirm("Start new project? Unsaved changes will be lost.")) return;
+    this.files = {html:"<h1>New Project</h1>\n", css:"/* CSS */\n", js:"// JS\n"};
+    this.switchFile("html");
+    if(window.innerWidth < 768) this.toggleSidebar();
+    this.log("Blank project created", "warn");
+  }
 
-// ✨ THE MAGIC RUN BUTTON ✨
-function runCode(){
-  saveCode(); // Auto save before run
-  const combinedCode = `
-    <!DOCTYPE html>
-    <html>
-      <head><style>${files.css}</style></head>
-      <body>
-        ${files.html}
-        <script>${files.js}<\/script>
-      </body>
-    </html>
-  `;
-  const blob = new Blob([combinedCode], { type: 'text/html' });
-  previewFrame.src = URL.createObjectURL(blob);
-  previewScreen.classList.remove("hidden");
-  previewScreen.classList.add("flex");
-  logMsg("App compiled & running 🚀", "ok");
-}
+  toggleSidebar(){
+    this.sidebar.classList.toggle("-translate-x-full");
+    this.mobileOverlay.classList.toggle("hidden");
+  }
 
-// ✨ DEPLOY BUTTON LOGIC ✨
-function deployCode() {
-  saveCode(); 
-  logMsg("Initiating Deployment Engine...", "warn");
-  setTimeout(() => { logMsg("Packaging HTML, CSS & JS...", "warn"); }, 800);
-  setTimeout(() => {
-    logMsg("Deploy Successful! 🌍 URL generation pending API connect.", "ok");
-  }, 2000);
-}
-
-// Close Preview
-function closePreview(){
-  previewScreen.classList.add("hidden");
-  previewScreen.classList.remove("flex");
-  previewFrame.src = ""; 
-  logMsg("Preview stopped.", "warn");
-}
-
-// --- UI Toggle Logic ---
-function toggleExplorer() { leftSidebar.classList.toggle("-translate-x-full"); updateOverlay(); }
-function toggleAI() { rightSidebar.classList.toggle("translate-x-full"); updateOverlay(); }
-function closeAllPanels() { leftSidebar.classList.add("-translate-x-full"); rightSidebar.classList.add("translate-x-full"); updateOverlay(); }
-function updateOverlay() {
-  if(window.innerWidth < 768) {
-    if (!leftSidebar.classList.contains("-translate-x-full") || !rightSidebar.classList.contains("translate-x-full")) {
-      mobileOverlay.classList.remove("hidden");
-    } else {
-      mobileOverlay.classList.add("hidden");
+  search(q){
+    if(!q) return;
+    const txt = this.files[this.currentFile].toLowerCase();
+    if(txt.includes(q.toLowerCase())){
+      this.log(`Match found for "${q}"`, "ok");
     }
   }
 }
 
-// AI Mock Logic
-document.getElementById("askAiBtn").onclick = () => {
-  const q = document.getElementById("aiPrompt").value.trim();
-  if(!q) return logMsg("Ask a question first", "err");
-  const aiOutput = document.getElementById("aiOutput");
-  aiOutput.innerHTML += `
-    <div class="mt-4 border-t border-gray-700 pt-3">
-      <p class="text-gray-400 mb-1 font-bold">You:</p>
-      <p class="text-sm text-gray-300">${q}</p>
-      <p class="text-green-400 font-bold mt-2">Verion AI:</p>
-      <p class="text-sm">I'm ready! Connect my backend logic.</p>
-    </div>
-  `;
-  document.getElementById("aiPrompt").value = "";
-  aiOutput.scrollTop = aiOutput.scrollHeight;
-};
-
-// Logger
-function logMsg(msg, type) {
-  let colorClass = type === 'ok' ? 'console-ok' : type === 'err' ? 'console-err' : 'console-warn';
-  consoleBox.innerHTML += `<br><span class="${colorClass}">[${new Date().toLocaleTimeString()}] ${msg}</span>`;
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-}
-
-// Boot up the IDE!
-bootApp();
+// Start Engine
+const ide = new VerionIDE();
 </script>
 
 </body>
