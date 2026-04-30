@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#111827" />
 <title>Verion IDE</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -20,55 +21,61 @@ textarea{resize:none;outline:none;border:none}
 
 <body>
 
-<div class="flex h-screen">
+<div class="flex h-screen relative overflow-hidden">
 
-<!-- Sidebar -->
-<aside class="w-64 panel border-r flex flex-col">
-  <div class="p-4 flex items-center gap-2">
-    <div class="logo">V</div>
-    <b>VERION</b>
+<div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
+
+<aside id="leftSidebar" class="absolute inset-y-0 left-0 z-50 w-64 panel border-r flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+  <div class="p-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="logo">V</div>
+      <b>VERION</b>
+    </div>
+    <button onclick="toggleSidebar()" class="md:hidden text-gray-400 text-xl font-bold">&times;</button>
   </div>
 
   <div class="p-2">
     <button onclick="ide.newProject()" class="w-full bg-blue-600 p-2 rounded">+ New</button>
   </div>
 
-  <button onclick="switchFile('html')" class="p-2 text-left">📄 index.html</button>
-  <button onclick="switchFile('css')" class="p-2 text-left">🎨 style.css</button>
-  <button onclick="switchFile('js')" class="p-2 text-left">⚙ script.js</button>
+  <button onclick="switchFile('html')" class="p-2 text-left hover:bg-gray-800">📄 index.html</button>
+  <button onclick="switchFile('css')" class="p-2 text-left hover:bg-gray-800">🎨 style.css</button>
+  <button onclick="switchFile('js')" class="p-2 text-left hover:bg-gray-800">⚙ script.js</button>
 </aside>
 
-<!-- Main -->
-<div class="flex-1 flex flex-col">
+<div class="flex-1 flex flex-col min-w-0">
 
-<!-- Topbar -->
-<div class="p-2 flex gap-2 panel border-b">
+<div class="p-2 flex items-center gap-2 panel border-b">
+  <div onclick="toggleSidebar()" class="logo cursor-pointer md:hidden">V</div>
+  
+  <div class="flex-1"></div>
+  
   <button onclick="saveCode()" class="bg-gray-700 px-3 py-1 rounded">Save</button>
   <button onclick="runCode()" class="bg-green-600 px-3 py-1 rounded">Run</button>
   <button onclick="toggleAI()" class="bg-purple-600 px-3 py-1 rounded">AI</button>
 </div>
 
-<!-- Editor -->
-<div class="flex flex-1">
+<div class="flex flex-1 relative min-h-0">
 
-<div class="flex flex-col w-1/2">
+<div class="flex flex-col w-full md:w-1/2 flex-1 border-r border-gray-800">
   <div class="p-2 text-xs bg-gray-900" id="activeFile">index.html</div>
   <textarea id="editor" class="flex-1 bg-black p-3 text-sm"></textarea>
   <div id="console" class="h-28 bg-black p-2 text-xs overflow-auto"></div>
 </div>
 
-<!-- Preview -->
-<div id="previewScreen" class="w-1/2 hidden flex-col bg-white">
-  <div class="p-2 bg-gray-200 text-black flex justify-between">
+<div id="previewScreen" class="absolute inset-0 z-30 hidden flex-col bg-white md:relative md:w-1/2">
+  <div class="p-2 bg-gray-200 text-black flex justify-between items-center">
     <b>Preview</b>
-    <button onclick="closePreview()" class="bg-red-500 text-white px-2">X</button>
+    <button onclick="closePreview()" class="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold">X</button>
   </div>
-  <iframe id="previewFrame" class="flex-1"></iframe>
+  <iframe id="previewFrame" class="flex-1 w-full h-full border-none"></iframe>
 </div>
 
-<!-- AI Panel -->
-<div id="rightSidebar" class="w-80 panel border-l hidden flex-col">
-  <div class="p-2 border-b">AI Assistant</div>
+<div id="rightSidebar" class="absolute inset-y-0 right-0 z-40 w-full md:w-80 panel border-l hidden flex-col md:relative shadow-2xl md:shadow-none">
+  <div class="p-2 border-b flex justify-between items-center">
+    <span>AI Assistant</span>
+    <button onclick="toggleAI()" class="md:hidden text-gray-400 font-bold text-lg">&times;</button>
+  </div>
   <textarea id="aiPrompt" class="p-2 h-24 bg-gray-800"></textarea>
   <button id="askAiBtn" class="bg-purple-600 p-2">Ask</button>
   <div id="aiOutput" class="flex-1 p-2 text-xs overflow-auto"></div>
@@ -78,7 +85,6 @@ textarea{resize:none;outline:none;border:none}
 </div>
 </div>
 
-<!-- ✅ NEW FIXED SCRIPT -->
 <script>
 class VerionIDE{
 
@@ -89,6 +95,8 @@ this.previewFrame=document.getElementById("previewFrame");
 this.previewScreen=document.getElementById("previewScreen");
 this.activeFile=document.getElementById("activeFile");
 this.rightSidebar=document.getElementById("rightSidebar");
+this.leftSidebar=document.getElementById("leftSidebar");
+this.mobileOverlay=document.getElementById("mobileOverlay");
 
 this.currentFile="html";
 this.currentBlobURL=null;
@@ -133,6 +141,12 @@ type==="css"?"style.css":"script.js";
 
 this.editor.value=this.files[type];
 this.log("Switched to "+this.activeFile.innerText);
+
+// Auto-close sidebar on mobile after selecting a file
+if(window.innerWidth < 768) {
+  this.leftSidebar.classList.add("-translate-x-full");
+  this.mobileOverlay.classList.add("hidden");
+}
 }
 
 save(){
@@ -183,6 +197,7 @@ this.log("Running 🚀");
 
 closePreview(){
 this.previewScreen.classList.add("hidden");
+this.previewScreen.classList.remove("flex");
 this.previewFrame.src="";
 
 if(this.currentBlobURL){
@@ -215,13 +230,21 @@ let q=document.getElementById("aiPrompt").value;
 if(!q)return;
 
 let out=document.getElementById("aiOutput");
-out.innerHTML+=`<div>🧑 ${q}</div><div>🤖 AI: Coming soon...</div>`;
+out.innerHTML+=`<div class="mb-2">🧑 ${q}</div><div class="mb-4 text-green-400">🤖 AI: Coming soon...</div>`;
 out.scrollTop=out.scrollHeight;
+document.getElementById("aiPrompt").value = "";
 }
 
 // toggle AI panel
 toggleAI(){
 this.rightSidebar.classList.toggle("hidden");
+this.rightSidebar.classList.toggle("flex");
+}
+
+// toggle left sidebar
+toggleSidebar(){
+this.leftSidebar.classList.toggle("-translate-x-full");
+this.mobileOverlay.classList.toggle("hidden");
 }
 
 }
@@ -234,6 +257,7 @@ function saveCode(){ide.save()}
 function runCode(){ide.run()}
 function closePreview(){ide.closePreview()}
 function toggleAI(){ide.toggleAI()}
+function toggleSidebar(){ide.toggleSidebar()}
 </script>
 
 </body>
