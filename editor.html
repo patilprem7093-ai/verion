@@ -2,309 +2,238 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#111827" />
-<title>Verion IDE Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verion IDE</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-:root {
-  --bg: #0b0f17;
-  --panel: #111827;
-  --border: #1f2937;
-  --accent: #4F7C82;
-}
-
-body {
-  background: var(--bg);
-  color: #fff;
-  font-family: Inter, system-ui, sans-serif;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-}
-
-textarea {
-  width: 100%;
-  height: 100%;
-  background: #0d1117;
-  color: #fff;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 16px;
-  font-family: monospace;
-}
-
-.console {
-  background: #000;
-  font-size: 12px;
-  height: 120px;
-  overflow: auto;
-  padding: 10px;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+body{margin:0;background:#0b0f17;color:white;font-family:sans-serif;overflow:hidden}
+textarea{resize:none;outline:none;border:none}
+.panel{background:#111827;border-color:#1f2937}
+.console-ok{color:#22c55e}
+.console-warn{color:#eab308}
+.console-err{color:#ef4444}
+.logo{width:32px;height:32px;background:#4F7C82;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:bold}
 </style>
 </head>
 
 <body>
 
-<div class="flex h-screen relative overflow-hidden">
+<div class="flex h-screen">
 
-  <div id="mobileOverlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
+<!-- Sidebar -->
+<aside class="w-64 panel border-r flex flex-col">
+  <div class="p-4 flex items-center gap-2">
+    <div class="logo">V</div>
+    <b>VERION</b>
+  </div>
 
-  <aside id="sidebar" class="absolute inset-y-0 left-0 z-50 w-64 panel border-r flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-2xl md:shadow-none">
-    
-    <div class="p-4 border-b border-gray-800 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 flex items-center justify-center bg-[#4F7C82] rounded font-bold text-lg">V</div>
-        <h1 class="font-bold tracking-wider text-sm">VERION PRO</h1>
-      </div>
-      <button id="closeSidebarBtn" class="md:hidden text-gray-400 text-2xl px-2 hover:text-white">&times;</button>
-    </div>
+  <div class="p-2">
+    <button onclick="ide.newProject()" class="w-full bg-blue-600 p-2 rounded">+ New</button>
+  </div>
 
-    <div class="p-4">
-      <button id="newBtn" class="w-full bg-[#4F7C82] hover:brightness-110 py-2.5 rounded-lg font-bold text-sm shadow-lg transition-all active:scale-95">+ New Project</button>
-    </div>
+  <button onclick="switchFile('html')" class="p-2 text-left">📄 index.html</button>
+  <button onclick="switchFile('css')" class="p-2 text-left">🎨 style.css</button>
+  <button onclick="switchFile('js')" class="p-2 text-left">⚙ script.js</button>
+</aside>
 
-    <div class="p-3 text-sm font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2 mx-2">Explorer</div>
+<!-- Main -->
+<div class="flex-1 flex flex-col">
 
-    <div class="flex flex-col px-2 gap-1 mt-2">
-      <button data-file="html" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">📄 index.html</button>
-      <button data-file="css" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">🎨 style.css</button>
-      <button data-file="js" class="fileBtn text-left p-2.5 rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">⚙ script.js</button>
-    </div>
-  </aside>
-
-  <main class="flex-1 flex flex-col min-w-0 relative">
-
-    <header class="flex items-center gap-3 p-3 panel border-b shrink-0 z-10">
-      
-      <button id="toggleBtn" class="w-8 h-8 flex items-center justify-center bg-[#4F7C82] rounded cursor-pointer md:hidden font-bold active:scale-95 transition-transform">V</button>
-
-      <input id="search" placeholder="Search in code..." class="hidden sm:block bg-gray-800 px-4 py-1.5 rounded-lg w-60 text-sm outline-none focus:ring-1 ring-[#4F7C82]">
-
-      <div class="flex-1"></div>
-
-      <button id="saveBtn" class="bg-gray-700 hover:bg-gray-600 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors">Save</button>
-      <button id="runBtn" class="bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-green-600/20 transition-colors">▶ Run</button>
-
-    </header>
-
-    <div class="flex flex-1 min-h-0 relative">
-
-      <div class="flex flex-col w-full md:w-1/2 border-r border-gray-800 min-w-0">
-        <div class="h-10 px-4 bg-gray-900 border-b border-gray-800 flex items-center shrink-0">
-          <span id="fileName" class="text-xs font-mono bg-gray-800 px-3 py-1 rounded text-gray-300 border border-gray-700">index.html</span>
-        </div>
-        <textarea id="editor" spellcheck="false" class="leading-relaxed"></textarea>
-        <div id="console" class="console border-t border-gray-800 shadow-inner"></div>
-      </div>
-
-      <div id="previewContainer" class="absolute inset-0 z-30 bg-white hidden flex-col md:relative md:flex md:w-1/2">
-        <div class="h-12 bg-gray-100 border-b flex items-center justify-between px-4 text-black shrink-0 md:hidden">
-          <div class="font-bold text-sm flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> Live Preview
-          </div>
-          <button id="closePreviewBtn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">Close Preview</button>
-        </div>
-        <iframe id="preview" class="flex-1 w-full h-full bg-white border-none"></iframe>
-      </div>
-
-    </div>
-
-  </main>
+<!-- Topbar -->
+<div class="p-2 flex gap-2 panel border-b">
+  <button onclick="saveCode()" class="bg-gray-700 px-3 py-1 rounded">Save</button>
+  <button onclick="runCode()" class="bg-green-600 px-3 py-1 rounded">Run</button>
+  <button onclick="toggleAI()" class="bg-purple-600 px-3 py-1 rounded">AI</button>
 </div>
 
+<!-- Editor -->
+<div class="flex flex-1">
+
+<div class="flex flex-col w-1/2">
+  <div class="p-2 text-xs bg-gray-900" id="activeFile">index.html</div>
+  <textarea id="editor" class="flex-1 bg-black p-3 text-sm"></textarea>
+  <div id="console" class="h-28 bg-black p-2 text-xs overflow-auto"></div>
+</div>
+
+<!-- Preview -->
+<div id="previewScreen" class="w-1/2 hidden flex-col bg-white">
+  <div class="p-2 bg-gray-200 text-black flex justify-between">
+    <b>Preview</b>
+    <button onclick="closePreview()" class="bg-red-500 text-white px-2">X</button>
+  </div>
+  <iframe id="previewFrame" class="flex-1"></iframe>
+</div>
+
+<!-- AI Panel -->
+<div id="rightSidebar" class="w-80 panel border-l hidden flex-col">
+  <div class="p-2 border-b">AI Assistant</div>
+  <textarea id="aiPrompt" class="p-2 h-24 bg-gray-800"></textarea>
+  <button id="askAiBtn" class="bg-purple-600 p-2">Ask</button>
+  <div id="aiOutput" class="flex-1 p-2 text-xs overflow-auto"></div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ✅ NEW FIXED SCRIPT -->
 <script>
-class VerionIDE {
+class VerionIDE{
 
-  constructor(){
-    // DOM Elements
-    this.editor = document.getElementById("editor");
-    this.console = document.getElementById("console");
-    this.preview = document.getElementById("preview");
-    this.fileName = document.getElementById("fileName");
-    this.sidebar = document.getElementById("sidebar");
-    this.mobileOverlay = document.getElementById("mobileOverlay");
-    this.previewContainer = document.getElementById("previewContainer");
+constructor(){
+this.editor=document.getElementById("editor");
+this.console=document.getElementById("console");
+this.previewFrame=document.getElementById("previewFrame");
+this.previewScreen=document.getElementById("previewScreen");
+this.activeFile=document.getElementById("activeFile");
+this.rightSidebar=document.getElementById("rightSidebar");
 
-    this.currentFile = "html";
+this.currentFile="html";
+this.currentBlobURL=null;
 
-    // Default Code
-    this.files = {
-      html:"<div class='box'>\n  <h1>Verion PRO 🚀</h1>\n  <p>Fully Responsive + Auto Save!</p>\n</div>",
-      css:"body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0b0f17; color: white; }\n.box { background: #111827; padding: 40px; border-radius: 20px; border: 1px solid #1f2937; text-align: center; }\nh1 { color: #4F7C82; margin-top:0; }",
-      js:"console.log('Mobile & Desktop Ready!');"
-    };
+this.files={
+html:"<h1>Hello Verion 🚀</h1>",
+css:"body{background:#0b0f17;color:white;text-align:center}",
+js:"console.log('Ready')"
+};
 
-    this.init();
-  }
+this.load();
+this.bind();
+this.switchFile("html");
+this.log("IDE Ready ⚡");
+}
 
-  init(){
-    this.bindUI();
-    this.load();
-    this.switchFile("html");
-    this.log("IDE Boot Sequence Complete ⚡");
-  }
+bind(){
 
-  bindUI(){
-    // File switching
-    document.querySelectorAll(".fileBtn").forEach(btn=>{
-      btn.onclick = () => {
-        this.switchFile(btn.dataset.file);
-        if(window.innerWidth < 768) this.toggleSidebar(); // Close sidebar on mobile after select
-      };
-    });
+// autosave
+this.editor.addEventListener("input",()=>{
+clearTimeout(this.t);
+this.t=setTimeout(()=>this.save(),800);
+});
 
-    // Buttons
-    document.getElementById("runBtn").onclick = () => this.run();
-    document.getElementById("saveBtn").onclick = () => this.save();
-    document.getElementById("newBtn").onclick = () => this.newProject();
-    
-    // Sidebar Toggles
-    document.getElementById("toggleBtn").onclick = () => this.toggleSidebar();
-    document.getElementById("closeSidebarBtn").onclick = () => this.toggleSidebar();
-    this.mobileOverlay.onclick = () => this.toggleSidebar();
+// shortcuts
+document.addEventListener("keydown",(e)=>{
+if(e.ctrlKey && e.key==="s"){e.preventDefault();this.save();}
+if(e.ctrlKey && e.key==="Enter"){this.run();}
+});
 
-    // Mobile Preview Toggle
-    document.getElementById("closePreviewBtn").onclick = () => this.closePreview();
+// AI button
+document.getElementById("askAiBtn").onclick=()=>this.askAI();
+}
 
-    // Search
-    const searchInput = document.getElementById("search");
-    if(searchInput) searchInput.oninput = (e) => this.search(e.target.value);
+switchFile(type){
+this.files[this.currentFile]=this.editor.value;
+this.currentFile=type;
 
-    // Keyboard Shortcuts
-    document.addEventListener("keydown",(e)=>{
-      if(e.ctrlKey && e.key==="s"){
-        e.preventDefault();
-        this.save();
-      }
-      if(e.ctrlKey && e.key==="Enter"){
-        this.run();
-      }
-    });
+this.activeFile.innerText=
+type==="html"?"index.html":
+type==="css"?"style.css":"script.js";
 
-    // Auto-save logic
-    this.editor.addEventListener("input", ()=>{
-      clearTimeout(this.autoTimer);
-      this.autoTimer = setTimeout(()=>this.save(), 800);
-    });
-  }
+this.editor.value=this.files[type];
+this.log("Switched to "+this.activeFile.innerText);
+}
 
-  log(msg, type="ok"){
-    const line = document.createElement("div");
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    line.style.color = type==="err" ? "#ef4444" : type==="warn" ? "#eab308" : "#22c55e";
-    line.style.marginBottom = "4px";
-    
-    this.console.appendChild(line);
-    this.console.scrollTop = this.console.scrollHeight;
-  }
+save(){
+this.files[this.currentFile]=this.editor.value;
+localStorage.setItem("verion",JSON.stringify(this.files));
+this.log("Saved ✅");
+}
 
-  switchFile(type){
-    this.files[this.currentFile] = this.editor.value;
-    this.currentFile = type;
+load(){
+try{
+let d=JSON.parse(localStorage.getItem("verion"));
+if(d)this.files=d;
+}catch(e){}
+}
 
-    this.fileName.textContent = type==="html" ? "index.html" : type==="css" ? "style.css" : "script.js";
-    this.editor.value = this.files[type];
-    this.log(this.fileName.textContent + " loaded");
-  }
+run(){
+this.save();
 
-  save(){
-    this.files[this.currentFile] = this.editor.value;
-    try{
-      localStorage.setItem("verion_pro", JSON.stringify(this.files));
-      this.log("Auto-Saved securely ✅");
-    }catch(e){
-      this.log("Save failed", "err");
-    }
-  }
+if(this.currentBlobURL){
+URL.revokeObjectURL(this.currentBlobURL);
+}
 
-  load(){
-    try{
-      const data = JSON.parse(localStorage.getItem("verion_pro"));
-      if(data && data.html !== undefined && data.css !== undefined && data.js !== undefined){
-        this.files = data;
-      }
-    }catch(e){}
-  }
-
-  run(){
-    this.save();
-
-    // Show preview container on mobile
-    if(window.innerWidth < 768) {
-      this.previewContainer.classList.remove("hidden");
-      this.previewContainer.classList.add("flex");
-    }
-
-    const doc = this.preview.contentDocument;
-    doc.open();
-
-    const code = `
-<!DOCTYPE html>
+let code=`
 <html>
-<head>
-<style>${this.files.css}</style>
-</head>
+<head><style>${this.files.css}</style></head>
 <body>
 ${this.files.html}
 <script>
 try{
 ${this.files.js}
 }catch(e){
-  document.body.innerHTML += "<pre style='color:red; background:#ffe6e6; padding:10px; border-radius:5px; font-family:monospace;'>Error: "+e.message+"</pre>";
+document.body.innerHTML+="<pre style='color:red'>Error: "+e.message+"</pre>";
 }
 <\/script>
 </body>
 </html>`;
 
-    doc.write(code);
-    doc.close();
+let blob=new Blob([code],{type:"text/html"});
+this.currentBlobURL=URL.createObjectURL(blob);
 
-    this.log("Compiled & Running 🚀");
-  }
+this.previewFrame.src=this.currentBlobURL;
 
-  closePreview() {
-    this.previewContainer.classList.add("hidden");
-    this.previewContainer.classList.remove("flex");
-    this.log("Preview closed", "warn");
-  }
+this.previewScreen.classList.remove("hidden");
+this.previewScreen.classList.add("flex");
 
-  newProject(){
-    if(!confirm("Start new project? Unsaved changes will be lost.")) return;
-    this.files = {html:"<h1>New Project</h1>\n", css:"/* CSS */\n", js:"// JS\n"};
-    this.switchFile("html");
-    if(window.innerWidth < 768) this.toggleSidebar();
-    this.log("Blank project created", "warn");
-  }
-
-  toggleSidebar(){
-    this.sidebar.classList.toggle("-translate-x-full");
-    this.mobileOverlay.classList.toggle("hidden");
-  }
-
-  search(q){
-    if(!q) return;
-    const txt = this.files[this.currentFile].toLowerCase();
-    if(txt.includes(q.toLowerCase())){
-      this.log(`Match found for "${q}"`, "ok");
-    }
-  }
+this.log("Running 🚀");
 }
 
-// Start Engine
-const ide = new VerionIDE();
+closePreview(){
+this.previewScreen.classList.add("hidden");
+this.previewFrame.src="";
+
+if(this.currentBlobURL){
+URL.revokeObjectURL(this.currentBlobURL);
+this.currentBlobURL=null;
+}
+
+this.log("Preview closed","warn");
+}
+
+newProject(){
+if(!confirm("New Project?"))return;
+
+this.files={html:"",css:"",js:""};
+this.editor.value="";
+this.switchFile("html");
+
+this.log("New project created","warn");
+}
+
+log(msg,type="ok"){
+let c=type==="err"?"console-err":type==="warn"?"console-warn":"console-ok";
+this.console.innerHTML+=`<div class="${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+this.console.scrollTop=this.console.scrollHeight;
+}
+
+// AI
+askAI(){
+let q=document.getElementById("aiPrompt").value;
+if(!q)return;
+
+let out=document.getElementById("aiOutput");
+out.innerHTML+=`<div>🧑 ${q}</div><div>🤖 AI: Coming soon...</div>`;
+out.scrollTop=out.scrollHeight;
+}
+
+// toggle AI panel
+toggleAI(){
+this.rightSidebar.classList.toggle("hidden");
+}
+
+}
+
+const ide=new VerionIDE();
+
+// global bindings
+function switchFile(t){ide.switchFile(t)}
+function saveCode(){ide.save()}
+function runCode(){ide.run()}
+function closePreview(){ide.closePreview()}
+function toggleAI(){ide.toggleAI()}
 </script>
 
 </body>
